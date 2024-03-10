@@ -4,9 +4,9 @@ from enum import Enum
 import matplotlib.pyplot as plt
 import numpy as np
 import typing
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 
-from network_classes import *
+
 
 
 # Create the necessary classes and structures
@@ -145,7 +145,7 @@ class UE:
     # TODO: consider making this a super class with AP and STA as subclasses
     # TODO: consider adding both uplink and downlink functionality- is it even different
     def __init__(self, ue_id: int, mcs: typing.Dict[int, int], network_mode_of_operation: str, 
-                service_mode_of_operation: str, n_packets : int) -> None:
+                service_mode_of_operation: str, n_packets : Optional[int]) -> None:
         '''
         Constructor for the UE class
 
@@ -157,7 +157,8 @@ class UE:
                 "central control" or "free" (TODO: add more modes)
             service_mode_of_operation (str): Mode of operation of the UE within a Qbv
                 window, used to determine how TXOP is used, how packets are allocated etc.
-            n_packets (int): Number of packets that the UE has to transmit
+            n_packets (int): Number of packets that the UE has to transmit-set to None if
+                the mode is an arrival process
         '''
         self.ue_id = ue_id
         self.mcs = mcs
@@ -167,6 +168,8 @@ class UE:
         self.n_packets = n_packets
         # List to store the packets that the UE has to transmit
         self.packets = []
+        # TODO: make this an input to the class constructor
+        self.poisson_lambda = None
 
     def __str__(self) -> str:
         '''
@@ -177,11 +180,23 @@ class UE:
             f"Network mode of Operation: {self.network_mode_of_operation}, "
             f"Service mode of Operation: {self.service_mode_of_operation}, "
             f"Number of Packets: {self.n_packets})")
+        if self.poisson_lambda is not None:
+            output += f"\nPoisson Lambda: {self.poisson_lambda}"
         output += "\nPackets: \n"
         for packet in self.packets:
             output += "\t" + str(packet) + "\n"
         return output
-        
+    
+    def set_poisson_lambda(self, poisson_lambda: float) -> None:
+        '''
+        Function to set the rate/lambda value for the Poisson arrival process
+        that governs its packet generation. Used only if the mode of operation
+        is "Poisson"
+
+        Args:
+            poisson_lambda (float): Poisson lambda for the UE
+        '''
+        self.poisson_lambda = poisson_lambda
 
 
     def  generate_packets(self, base_schedule : Schedule, packet_size: List[int], 
@@ -208,6 +223,7 @@ class UE:
             ue_name = "UE" + str(self.ue_id)
             num_slots_ue = 0
             slots_ue = []
+            # Determine which slots the UE can trasnmit in
             for slot in base_schedule.schedule:
                 if ue_name in base_schedule.schedule[slot].UEs:
                     num_slots_ue += 1
@@ -227,11 +243,38 @@ class UE:
             packet_counter = 0
             for slot_index, num_packets in zip(slots_ue, num_packets_per_slot):
                 for _ in range(num_packets):
-                    self.packets.append(Packet(size=packet_size[packet_counter], 
-                                                priority= packet_priorities[packet_counter], 
-                                                sequence_number=packet_counter,
-                                                arrival_time=base_schedule.schedule[slot_index].start_time - 1))
+                    self.packets.append(Packet(size = packet_size[packet_counter], 
+                                                priority = packet_priorities[packet_counter], 
+                                                sequence_number = packet_counter,
+                                                arrival_time = base_schedule.schedule[slot_index].start_time - 1))
                     packet_counter += 1
+        
+        elif self.network_mode_of_operation == "Poisson":
+            assert self.poisson_lambda is not None, "Poisson lambda not set"
+            # TODO: make packet_sizes and packet_priorities a function of packet_counter
+            assert len(packet_size) == 1, "Packet size list should have only one element"
+            assert len(packet_priorities) == 1, "Packet priority list should have only one element"
+
+            # Number of packets is distributed as a poisson random variable
+            interval = base_schedule.end_time - base_schedule.start_time
+            self.n_packets = np.random.poisson(self.poisson_lambda*interval)
+            
+            # Arrival times are uniformly distributed over the interval
+            arrival_times = np.random.uniform(base_schedule.start_time, base_schedule.end_time, 
+                                              self.n_packets)
+            arrival_times.sort()
+            
+            for packet_counter in range(self.n_packets):
+                self.packets.append(Packet(size = packet_size[0], 
+                                          priority = packet_priorities[0], 
+                                          sequence_number = packet_counter,
+                                          arrival_time = arrival_times[packet_counter]))
+
+
+
+            
+            
+            
 
     def obtain_packet_latency(self) -> List[float]:
         '''
@@ -315,6 +358,8 @@ class UE:
                                     payload_used += packet.size
                                     if self.transmit_packet(PER):
                                         packet.delivery_time = base_schedule.schedule[slot].start_time + delivery_latency
+                                        assert packet.delivery_time <= base_schedule.schedule[slot].end_time, \
+                                            "Packet delivery time exceeds slot end time" 
                                         packet.status = PacketStatus.DELIVERED
                                     else:
                                         packet.status = PacketStatus.DROPPED
@@ -330,3 +375,21 @@ class UE:
 
 
 # TODO: Write a network class
+                                    
+
+## Miscellanous functions
+                                    
+# Write a function to compute the 99th percentile of the latencies given an array of latencies
+
+def compute_percentile(latencies: List[float], percentile: int) -> float:
+    '''
+    Function to compute the percentile of the latencies
+
+    Args:
+        latencies (List[float]): List of latencies
+        percentile (int): Percentile to compute
+
+    Returns:
+        float: The percentile of the latencies
+    '''
+    return np.percentile(latencies, percentile)                                    
