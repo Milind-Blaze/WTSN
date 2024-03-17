@@ -145,7 +145,8 @@ class UE:
     # TODO: consider making this a super class with AP and STA as subclasses
     # TODO: consider adding both uplink and downlink functionality- is it even different
     def __init__(self, ue_id: int, mcs: typing.Dict[int, int], network_mode_of_operation: str, 
-                service_mode_of_operation: str, n_packets : Optional[int]) -> None:
+                service_mode_of_operation: str, n_packets : Optional[int], CWmin: int = 15,
+                CWmax: int = 63) -> None:
         '''
         Constructor for the UE class
 
@@ -170,8 +171,12 @@ class UE:
         self.packets = []
         # TODO: make this an input to the class constructor
         self.poisson_lambda = None
+        self.CWmin = CWmin
+        self.CWmax = CWmax
+        self.CW = CWmin # Initial value of the contention window
 
     def __str__(self) -> str:
+        # TODO: make sure this function is up to date
         '''
         Function to print the UE
         '''
@@ -179,6 +184,9 @@ class UE:
             f"UE(MCS: {self.mcs}, "
             f"Network mode of Operation: {self.network_mode_of_operation}, "
             f"Service mode of Operation: {self.service_mode_of_operation}, "
+            f"CWmin: {self.CWmin}, "
+            f"CWmax: {self.CWmax}, "
+            f"CW: {self.CW}, "
             f"Number of Packets: {self.n_packets})")
         if self.poisson_lambda is not None:
             output += f"\nPoisson Lambda: {self.poisson_lambda}"
@@ -270,10 +278,6 @@ class UE:
                                           sequence_number = packet_counter,
                                           arrival_time = arrival_times[packet_counter]))
 
-
-
-            
-            
             
 
     def obtain_packet_latency(self) -> List[float]:
@@ -331,7 +335,8 @@ class UE:
             Mode 2: Mode for testing with a single Qbv window based on packet limits
                 i.e only so many bytes can be served in a single Qbv window. The 
                 number of packets that fit this number of bytes are served and the 
-                rest are queued to be served in the next Qbv window
+                rest are queued to be served in the next Qbv window. This mode assumes
+                that in all cases the slot operates in reserved mode
             '''
             # Need allowed payload size
             # Need latency with allowed payload size
@@ -349,12 +354,18 @@ class UE:
                 if UE_name in base_schedule.schedule[slot].UEs:
                     # Get the packets that can be served in this slot
                     payload_used = 0
-                    for packet in self.packets: # Relying on this being ordered by sequence number
+                    for packet in self.packets: # Relying on this being ordered by packet sequence number
                         if packet.arrival_time <= base_schedule.schedule[slot].start_time:
                             if (packet.status == PacketStatus.ARRIVED or packet.status == PacketStatus.QUEUED 
                                 or packet.status == PacketStatus.DROPPED):
+                                # TODO: Currently, this assumes that there will always be more packets
+                                # ready to be transmitted than payload_size. So, the delivery latency is
+                                # always the maximum possible. However, if there are fewer packets than
+                                # paylaod size, then the delivery latency will be lower
                                 if payload_used + packet.size <= payload_size:
                                     # TODO: Add a guard interval
+                                    # TODO: Implement number of retries-currently there are no retries
+                                    # within the slot
                                     payload_used += packet.size
                                     if self.transmit_packet(PER):
                                         packet.delivery_time = base_schedule.schedule[slot].start_time + delivery_latency
@@ -369,13 +380,169 @@ class UE:
 
                         
 
-
-
-
-
-
 # TODO: Write a network class
-                                    
+class Network:
+    '''
+    Class to represent the Wi-Fi network. This stores things like the slot parameters, handles
+    DIFS and whatnot and serves the packets, especially useful when you have to deal with contention
+    '''
+    # TODO: change UEs to num_UEs and then have a function to generate UEs
+    # TODO: add a function to generate the base 
+    # TODO: Move the packet transmission function here
+
+    def __init__(self, wifi_slot_time : float, DIFS: float, UEs: Dict[UE]) -> None:
+        '''
+        Constructor for the Network class
+
+        Args:
+            wifi_slot_time (float): Duration of a slot in microseconds
+            DIFS (float): Duration of the DIFS in microseconds
+            UEs (Dict[UE]): Dictionary of UEs in the network indexed by "UE" + str(ue_id)
+        '''
+        self.wifi_slot_time = wifi_slot_time
+        self.DIFS = DIFS
+        self.UEs = UEs
+
+    def serve_packets(self, base_schedule: Schedule, service_mode_of_operation: str, 
+                      **kwargs) -> None:
+        '''
+        Function to serve the packets that the UEs have to transmit
+
+        Args:
+            base_schedule (Schedule): A base schedule specifying
+                Qbv windows for different UEs across time
+            service_mode_of_operation (str): Mode of operation of the UEs within 
+                a Qbv window
+        '''
+        if service_mode_of_operation == "Mode 1" or service_mode_of_operation == "Mode 2":
+            for ue in self.UEs:
+                ue.serve_packets(base_schedule, **kwargs)
+        elif service_mode_of_operation == "Mode 3":
+            # Mode 3 handles contention as well, the behaviour is the same as Mode 2 in the reserved
+            # slots but different in the contention slot
+            # The following are the assumptions in the reserved slot:
+                # Only one UE can transmit in the slot
+                # All UEs have the same characteristics: payload size, delivery latency, PER
+            # The following are the assumptions in the contetion slot:
+            # 
+            
+            assert 'payload_size' in kwargs, "Payload size not provided"
+            assert "payload_size_reserved" in kwargs['payload_size'], "Payload size for reserved \
+                slots not provided"
+            assert "payload_size_contention" in kwargs['payload_size'], "Payload size for \
+                contention slots not provided"
+            assert 'delivery_latency' in kwargs, "Delivery latency not provided"
+            assert "delivery_latency_reserved" in kwargs['delivery_latency'], "Delivery latency for \
+                reserved slots not provided"
+            assert "delivery_latency_contention" in kwargs['delivery_latency'], "Delivery latency for \
+                contention slots not provided"
+            assert 'PER' in kwargs, "PER not provided"
+            assert "PER_reserved" in kwargs['PER'], "PER for reserved slots not provided"
+            assert "PER_contention" in kwargs['PER'], "PER for contention slots not provided"
+
+            # Need to map PER to MCS somehow
+            
+            UE_name = "UE" + str(self.ue_id)
+
+
+            payload_size_reserved = kwargs['payload_size']["reserved"]
+            payload_size_contention = kwargs['payload_size']["contention"]
+            delivery_latency_reserved = kwargs['delivery_latency']["reserved"]
+            delivery_latency_contention = kwargs['delivery_latency']["contention"]
+            PER_reserved = kwargs['PER']["reserved"]    
+            PER_contention = kwargs['PER']["contention"]
+            
+
+            for slot in base_schedule.schedule:
+                if slot.mode == "reserved":
+                    assert len(base_schedule.schedule[slot].UEs) == 1 , "No UEs in reserved slot"
+                    UE_name = base_schedule.schedule[slot].UEs[0]
+                    # Get the packets that can be served in this slot
+                    payload_used = 0
+                    for packet in self.UEs[UE_name].packets: # Relying on this being ordered by sequence number
+                        if packet.arrival_time <= base_schedule.schedule[slot].start_time:
+                            if (packet.status == PacketStatus.ARRIVED or packet.status == PacketStatus.QUEUED 
+                                or packet.status == PacketStatus.DROPPED):
+                                # TODO: Currently, this assumes that there will always be more packets
+                                # ready to be transmitted than payload_size. So, the delivery latency is
+                                # always the maximum possible. However, if there are fewer packets than
+                                # paylaod size, then the delivery latency will be lower
+                                if payload_used + packet.size <= payload_size_reserved:
+                                    # TODO: Add a guard interval
+                                    # TODO: Implement number of retries-currently there are no retries
+                                    # within the slot
+                                    payload_used += packet.size
+                                    if self.UEs[UE_name].transmit_packet(PER_reserved):
+                                        packet.delivery_time = base_schedule.schedule[slot].start_time + \
+                                                            delivery_latency_reserved
+                                        assert packet.delivery_time <= base_schedule.schedule[slot].end_time, \
+                                            "Packet delivery time exceeds slot end time" 
+                                        packet.status = PacketStatus.DELIVERED
+                                    else:
+                                        packet.status = PacketStatus.DROPPED
+                                else:
+                                    packet.status = PacketStatus.QUEUED
+                elif slot.mode == "contention":
+                    start_time = base_schedule.schedule[slot].start_time
+                    # Contend only with the spcified UEs
+                    UEs_to_contend = base_schedule.schedule[slot].UEs
+
+                    while start_time < base_schedule.schedule[slot].end_time:
+                        # Draw a random backoff time uniformly between 0 and CW for 
+                        # each UE and return the minimum backoff time, if there is more than
+                        # one UE with the same minimum backoff time, return that list of UEs
+                        # and then draw again
+                        backoff_times = {}
+                        for UE_name in UEs_to_contend:
+                            backoff_times[UE_name] = np.random.randint(0, self.UEs[UE_name].CW) 
+                        min_backoff = min(backoff_times.values())
+                        # TODO: Check if start_time + min_backoff is less than the end time of the slot
+                        UEs_to_transmit = [UE_name for UE_name in UEs_to_contend if \
+                                        backoff_times[UE_name] == min_backoff]
+                        assert len(UEs_to_transmit) > 0, "No UEs to transmit"
+                        if len(UEs_to_transmit) == 1:
+                            # Transmit all packets that have arrived till this point (start_time)
+                            delivery_time = start_time + delivery_latency_contention + \
+                                            min_backoff*self.wifi_slot_time + self.DIFS
+                            if delivery_time <= base_schedule.schedule[slot].end_time:
+                                for UE_name in UEs_to_transmit:
+                                    payload_used = 0
+                                    for packet in self.UEs[UE_name].packets:
+                                        if packet.arrival_time <= start_time:
+                                            if (packet.status == PacketStatus.ARRIVED 
+                                                or packet.status == PacketStatus.QUEUED 
+                                                or packet.status == PacketStatus.DROPPED):
+                                                if payload_used + packet.size <= payload_size_contention:
+                                                    payload_used += packet.size 
+                                                    if self.UEs[UE_name].transmit_packet(PER_contention):
+                                                        packet.delivery_time = delivery_time 
+                                                        packet.status = PacketStatus.DELIVERED
+                                                    else:
+                                                        packet.status = PacketStatus.DROPPED
+                                    # reset the contention window
+                                    self.UEs[UE_name].CW = self.UEs[UE_name].CWmin
+                            start_time = delivery_time 
+
+                        else:
+                            delivery_time = start_time + delivery_latency_contention + \
+                                            min_backoff*self.wifi_slot_time + self.DIFS
+                            if delivery_time <= base_schedule.schedule[slot].end_time:
+                                for UE_name in UEs_to_transmit: 
+                                    payload_used = 0
+                                    for packet in self.UEs[UE_name].packets:
+                                        if packet.arrival_time <= start_time:
+                                            if (packet.status == PacketStatus.ARRIVED 
+                                                or packet.status == PacketStatus.QUEUED 
+                                                or packet.status == PacketStatus.DROPPED):
+                                                if payload_used + packet.size <= payload_size_contention:
+                                                    payload_used += packet.size 
+                                                    packet.status = PacketStatus.DROPPED
+                                    # double contention window for each UE
+                                    self.UEs[UE_name].CW = min(2*self.UEs[UE_name].CW + 1, 
+                                                            self.UEs[UE_name].CWmax)
+
+                            start_time = delivery_time
+
 
 ## Miscellanous functions
                                     
