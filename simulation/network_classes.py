@@ -1,3 +1,9 @@
+"""
+File to contain all the network related classes and functionalities for the simulation
+
+Author: Milind Kumar Vaddiraju, ChatGPT, Copilot
+"""
+
 # Necessary imports
 
 from enum import Enum
@@ -390,7 +396,7 @@ class Network:
     # TODO: add a function to generate the base 
     # TODO: Move the packet transmission function here
 
-    def __init__(self, wifi_slot_time : float, DIFS: float, UEs: Dict[UE]) -> None:
+    def __init__(self, wifi_slot_time : float, DIFS: float, UEs: Dict[str, UE]) -> None:
         '''
         Constructor for the Network class
 
@@ -402,6 +408,7 @@ class Network:
         self.wifi_slot_time = wifi_slot_time
         self.DIFS = DIFS
         self.UEs = UEs
+        self.selected_UEs = [] # UEs that are selected to transmit in a contention slot
 
     def serve_packets(self, base_schedule: Schedule, service_mode_of_operation: str, 
                       **kwargs) -> None:
@@ -427,22 +434,23 @@ class Network:
             # 
             
             assert 'payload_size' in kwargs, "Payload size not provided"
-            assert "payload_size_reserved" in kwargs['payload_size'], "Payload size for reserved \
+            assert "reserved" in kwargs['payload_size'], "Payload size for reserved \
                 slots not provided"
-            assert "payload_size_contention" in kwargs['payload_size'], "Payload size for \
+            assert "contention" in kwargs['payload_size'], "Payload size for \
                 contention slots not provided"
             assert 'delivery_latency' in kwargs, "Delivery latency not provided"
-            assert "delivery_latency_reserved" in kwargs['delivery_latency'], "Delivery latency for \
+            assert "reserved" in kwargs['delivery_latency'], "Delivery latency for \
                 reserved slots not provided"
-            assert "delivery_latency_contention" in kwargs['delivery_latency'], "Delivery latency for \
+            assert "contention" in kwargs['delivery_latency'], "Delivery latency for \
                 contention slots not provided"
             assert 'PER' in kwargs, "PER not provided"
-            assert "PER_reserved" in kwargs['PER'], "PER for reserved slots not provided"
-            assert "PER_contention" in kwargs['PER'], "PER for contention slots not provided"
+            assert "reserved" in kwargs['PER'], "PER for reserved slots not provided"
+            assert "contention" in kwargs['PER'], "PER for contention slots not provided"
 
             # Need to map PER to MCS somehow
             
-            UE_name = "UE" + str(self.ue_id)
+            # TODO: maybe refactor the code to serve the reserved slots and contention slots
+            # separately
 
 
             payload_size_reserved = kwargs['payload_size']["reserved"]
@@ -454,7 +462,7 @@ class Network:
             
 
             for slot in base_schedule.schedule:
-                if slot.mode == "reserved":
+                if base_schedule.schedule[slot].mode == "reserved":
                     assert len(base_schedule.schedule[slot].UEs) == 1 , "No UEs in reserved slot"
                     UE_name = base_schedule.schedule[slot].UEs[0]
                     # Get the packets that can be served in this slot
@@ -482,7 +490,7 @@ class Network:
                                         packet.status = PacketStatus.DROPPED
                                 else:
                                     packet.status = PacketStatus.QUEUED
-                elif slot.mode == "contention":
+                elif base_schedule.schedule[slot].mode == "contention":
                     start_time = base_schedule.schedule[slot].start_time
                     # Contend only with the spcified UEs
                     UEs_to_contend = base_schedule.schedule[slot].UEs
@@ -494,12 +502,18 @@ class Network:
                         # and then draw again
                         backoff_times = {}
                         for UE_name in UEs_to_contend:
+                            # TODO: Maybe initialize RNG each time to get different backoff times
                             backoff_times[UE_name] = np.random.randint(0, self.UEs[UE_name].CW) 
                         min_backoff = min(backoff_times.values())
                         # TODO: Check if start_time + min_backoff is less than the end time of the slot
                         UEs_to_transmit = [UE_name for UE_name in UEs_to_contend if \
                                         backoff_times[UE_name] == min_backoff]
                         assert len(UEs_to_transmit) > 0, "No UEs to transmit"
+
+                        # save some debug information
+                        self.selected_UEs.append([base_schedule.schedule[slot].slot_index,
+                                                  start_time, min_backoff, UEs_to_transmit])
+
                         if len(UEs_to_transmit) == 1:
                             # Transmit all packets that have arrived till this point (start_time)
                             delivery_time = start_time + delivery_latency_contention + \
