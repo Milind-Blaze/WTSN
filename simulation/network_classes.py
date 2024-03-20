@@ -554,7 +554,9 @@ class Network:
                                     # double contention window for each UE
                                     self.UEs[UE_name].CW = min(2*self.UEs[UE_name].CW + 1, 
                                                             self.UEs[UE_name].CWmax)
-
+                            # TODO: there is a corner case where a UE's backoff might finish just
+                            # after the end of delivery_time in which case it should transmit
+                            # right away instead of starting again
                             start_time = delivery_time
 
 
