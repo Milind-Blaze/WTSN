@@ -494,11 +494,11 @@ class Network:
                     start_time = base_schedule.schedule[slot].start_time
                     # Contend only with the spcified UEs
                     UEs_to_contend = base_schedule.schedule[slot].UEs
-
+                    n_transmitted_array = []
                     while start_time < base_schedule.schedule[slot].end_time:
                         # Draw a random backoff time uniformly between 0 and CW for 
                         # each UE and return the minimum backoff time, if there is more than
-                        # one UE with the same minimum backoff time, return that list of UEs
+                        # one UE with the same minimum backoff time, return that list of UEs1
                         # and then draw again
                         backoff_times = {}
                         for UE_name in UEs_to_contend:
@@ -514,6 +514,8 @@ class Network:
                         self.selected_UEs.append([base_schedule.schedule[slot].slot_index,
                                                   start_time, min_backoff, UEs_to_transmit])
 
+                        n_packets_transmitted = 0
+                        
                         if len(UEs_to_transmit) == 1:
                             # Transmit all packets that have arrived till this point (start_time)
                             delivery_time = start_time + delivery_latency_contention + \
@@ -528,16 +530,36 @@ class Network:
                                                 or packet.status == PacketStatus.DROPPED):
                                                 if payload_used + packet.size <= payload_size_contention:
                                                     payload_used += packet.size 
+                                                    n_packets_transmitted += 1
                                                     if self.UEs[UE_name].transmit_packet(PER_contention):
                                                         packet.delivery_time = delivery_time 
                                                         packet.status = PacketStatus.DELIVERED
                                                     else:
                                                         packet.status = PacketStatus.DROPPED
+                                        else:
+                                        # assume packets are in ascending order of arrival time
+                                        # if you've already reached the packets that haven't arrived
+                                        # then break and don't evaluate any further
+                                            break
+                                            
                                     # reset the contention window
                                     self.UEs[UE_name].CW = self.UEs[UE_name].CWmin
-                            start_time = delivery_time 
+                            if n_packets_transmitted > 0:
+                                print("start_time: ", start_time)
+                                start_time = delivery_time 
+                                print("delivery_time: ", delivery_time)
+                                print("UEs: ", UEs_to_transmit)
+                            elif n_packets_transmitted == 0:
+                                start_time = start_time + 1 
+                                print("start_time: ", start_time)
+                            # print("n_packets_transmitted : ", n_packets_transmitted)
+                            n_transmitted_array.append(n_packets_transmitted)
 
                         else:
+                            # TODO: Fix the case where UEs contend but there's some of them
+                            # have no data to transmit, then exclude them from the list of
+                            # UEs contending, prevent packets from being dropped and
+                            # prevent the contention window from being doubled
                             delivery_time = start_time + delivery_latency_contention + \
                                             min_backoff*self.wifi_slot_time + self.DIFS
                             if delivery_time <= base_schedule.schedule[slot].end_time:
@@ -549,15 +571,31 @@ class Network:
                                                 or packet.status == PacketStatus.QUEUED 
                                                 or packet.status == PacketStatus.DROPPED):
                                                 if payload_used + packet.size <= payload_size_contention:
+                                                    n_packets_transmitted += 1
                                                     payload_used += packet.size 
                                                     packet.status = PacketStatus.DROPPED
+                                        else:
+                                            break
                                     # double contention window for each UE
-                                    self.UEs[UE_name].CW = min(2*self.UEs[UE_name].CW + 1, 
-                                                            self.UEs[UE_name].CWmax)
+                                    if n_packets_transmitted > 0: 
+                                    # enforce behaviour only if at least one packet is transmitted 
+                                    # across all UEs. Avoids the case that no UE transmits and 
+                                    # contention window is still doubled
+                                        self.UEs[UE_name].CW = min(2*self.UEs[UE_name].CW + 1, 
+                                                                self.UEs[UE_name].CWmax)
                             # TODO: there is a corner case where a UE's backoff might finish just
                             # after the end of delivery_time in which case it should transmit
                             # right away instead of starting again
-                            start_time = delivery_time
+                            if n_packets_transmitted > 0:
+                                print("start_time: ", start_time)
+                                start_time = delivery_time
+                                print("delivery_time: ", delivery_time)
+                                print("UEs: ", UEs_to_transmit)
+                            elif n_packets_transmitted == 0:
+                                start_time = start_time + 1
+                                print("start_time: ", start_time)
+
+                    print("Mean packets transmitted: ", np.mean(n_transmitted_array))
 
 
 ## Miscellanous functions
