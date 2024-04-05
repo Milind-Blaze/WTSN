@@ -11,8 +11,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import typing
 from typing import List, Tuple, Dict, Optional
+import inspect
 
-
+np.random.seed(1234)
 
 
 # Create the necessary classes and structures
@@ -274,6 +275,8 @@ class UE:
             self.n_packets = np.random.poisson(self.poisson_lambda*interval)
             
             # Arrival times are uniformly distributed over the interval
+            # TODO: set random seed?
+            
             arrival_times = np.random.uniform(base_schedule.start_time, base_schedule.end_time, 
                                               self.n_packets)
             arrival_times.sort()
@@ -449,6 +452,14 @@ class Network:
             assert "reserved" in kwargs['PER'], "PER for reserved slots not provided"
             assert "contention" in kwargs['PER'], "PER for contention slots not provided"
 
+            if "advance_time" in kwargs:
+                advance_time = kwargs["advance_time"]
+            else:
+                advance_time = 1
+            
+            if self.debug_mode:
+                print("advance time: ", advance_time)
+
             # Need to map PER to MCS somehow
             
             # TODO: maybe refactor the code to serve the reserved slots and contention slots
@@ -529,8 +540,11 @@ class Network:
                         n_packets_transmitted = 0
                         
                         if len(UEs_to_transmit) == 0:
-                            start_time = start_time + 1
+                            start_time = start_time + advance_time
                             
+                            # Find the minimum packet arrival time for a packet that is  among the UEs which is greater than
+                            # the current start time 
+
                             if self.debug_mode:
                                 print("start_time: ", start_time)
 
@@ -572,9 +586,13 @@ class Network:
                                     print("delivery_time: ", delivery_time)
                                     print("UEs: ", UEs_to_transmit)
                             elif n_packets_transmitted == 0:
-                                start_time = start_time + 1
-                                if self.debug_mode: 
-                                    print("Should not happen! start_time: ", start_time)
+                                start_time = start_time + advance_time
+                                if self.debug_mode:
+                                    # This gets triggered towards the end of the slot
+                                    # as delivery time exceeds the end time of the slot 
+                                    print("Should not happen! start_time (advanced): ", start_time)
+                                    print("UEs: ", UEs_to_transmit)
+                                    print("Line595 Delivery time: ", delivery_time)
                             # print("n_packets_transmitted : ", n_packets_transmitted)
                             n_transmitted_array.append(n_packets_transmitted)
 
@@ -622,9 +640,14 @@ class Network:
                             elif n_packets_transmitted == 0:
                                 start_time = start_time + 1
                                 if self.debug_mode:
+                                    # This gets triggered towards the end of the slot
+                                    # as delivery time exceeds the end time of the slot
                                     print("Should not happen! start_time: ", start_time)
+                                    print("UEs: ", UEs_to_transmit)
+                                    print("Line647 Delivery time: ", delivery_time)
 
                     print("Mean packets transmitted: ", np.mean(n_transmitted_array))
+                    # print("array of transmission numbers: ", n_transmitted_array)
 
 
 ## Miscellanous functions
