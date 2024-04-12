@@ -61,8 +61,8 @@ class Packet:
         output = (f"Packet(Size: {self.size} bytes, "
             f"Priority: {self.priority}, "
             f"Sequence Number: {self.sequence_number}, "
-            f"Arrival Time: {self.arrival_time} microseconds), "
-            f"Delivery Time: {self.delivery_time} microseconds), "
+            f"Arrival Time: {self.arrival_time} microseconds, "
+            f"Delivery Time: {self.delivery_time} microseconds, "
             f"Status: {self.status.name}")
 
         return output
