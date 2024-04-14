@@ -412,8 +412,21 @@ class Network:
         self.wifi_slot_time = wifi_slot_time
         self.DIFS = DIFS
         self.UEs = UEs
-        self.selected_UEs = [] # UEs that are selected to transmit in a contention slot
+        self.UE_records = {} # UEs that are selected to transmit in a contention slot
+        self.initialize_UE_records()
         self.debug_mode = debug_mode
+
+    def initialize_UE_records(self) -> None:
+        '''
+        Function to initialize the UE records
+        '''
+        for UE_name in self.UEs:
+            self.UE_records[UE_name] = {}
+            for slot in self.base_schedule.schedule:
+                self.UE_records[UE_name][slot] = {"num_wins": 0, 
+                                                  "num_transmissions": [],
+                                                  "num_contentions": 0}
+
 
     def serve_packets(self, base_schedule: Schedule, service_mode_of_operation: str, 
                       **kwargs) -> None:
@@ -534,8 +547,8 @@ class Network:
 
 
                         # save some debug information
-                        self.selected_UEs.append([base_schedule.schedule[slot].slot_index,
-                                                  start_time, min_backoff, UEs_to_transmit])
+                        # self.selected_UEs.append([base_schedule.schedule[slot].slot_index,
+                        #                           start_time, min_backoff, UEs_to_transmit])
 
                         n_packets_transmitted = 0
                         
@@ -575,7 +588,13 @@ class Network:
                                             break
                                             
                                     # reset the contention window
+                                    # TODO: You're skipping cases towards the end where delivery time
+                                    # exceeds the end time of the slot. Need to fix this in the 
+                                    # variable delivery latency case
                                     self.UEs[UE_name].CW = self.UEs[UE_name].CWmin
+                                    self.UE_records[UE_name][slot]["num_wins"] += 1
+                                    self.UE_records[UE_name][slot]["num_transmissions"].append(n_packets_transmitted)
+                                    
                             if n_packets_transmitted > 0:
                                 if self.debug_mode:
                                     print("start_time: ", start_time)
@@ -596,6 +615,7 @@ class Network:
                             # print("n_packets_transmitted : ", n_packets_transmitted)
                             n_transmitted_array.append(n_packets_transmitted)
 
+
                         else:
                             # TODO: Fix the case where UEs contend but there's some of them
                             # have no data to transmit, then exclude them from the list of
@@ -604,6 +624,7 @@ class Network:
                             delivery_time = start_time + delivery_latency_contention + \
                                             min_backoff*self.wifi_slot_time + self.DIFS
                             if delivery_time <= base_schedule.schedule[slot].end_time:
+                                n_transmitted_old = 0 # TODO: remove the need for this by cleaning up the logic of the code
                                 for UE_name in UEs_to_transmit: 
                                     payload_used = 0
                                     for packet in self.UEs[UE_name].packets:
@@ -625,6 +646,13 @@ class Network:
                                     # from UEs_winning_backoff?)
                                         self.UEs[UE_name].CW = min(2*self.UEs[UE_name].CW + 1, 
                                                                 self.UEs[UE_name].CWmax)
+                                        
+                                    self.UE_records[UE_name][slot]["num_contentions"] += 1
+                                    self.UE_records[UE_name][slot]["num_wins"] += 1
+                                    self.UE_records[UE_name][slot]["num_transmissions"].append(n_packets_transmitted - n_transmitted_old)
+                                    n_transmitted_old = n_packets_transmitted
+                                        
+
                             # TODO: there is a corner case where a UE's backoff might finish just
                             # after the end of delivery_time in which case it should transmit
                             # right away instead of starting again
