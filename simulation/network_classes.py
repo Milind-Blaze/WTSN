@@ -181,6 +181,7 @@ class UE:
         self.CWmin = CWmin
         self.CWmax = CWmax
         self.CW = CWmin # Initial value of the contention window
+        self.transmission_record = {}
 
     def __str__(self) -> str:
         # TODO: make sure this function is up to date
@@ -212,6 +213,22 @@ class UE:
             poisson_lambda (float): Poisson lambda for the UE
         '''
         self.poisson_lambda = poisson_lambda
+
+
+    def initialize_transmission_record(self, base_schedule: Schedule) -> None:
+        '''
+        Function to initialize the transmission record for the UE
+
+        Args:
+            base_schedule (Schedule): A base schedule specifying
+                Qbv windows for different UEs across time
+        '''
+        for slot in base_schedule.schedule:
+            self.transmission_record[slot] = {"num_wins": 0, 
+                                            "num_transmissions": [],
+                                            "num_contentions": 0}
+
+
 
 
     def  generate_packets(self, base_schedule : Schedule, packet_size: List[int], 
@@ -412,20 +429,8 @@ class Network:
         self.wifi_slot_time = wifi_slot_time
         self.DIFS = DIFS
         self.UEs = UEs
-        self.UE_records = {} # UEs that are selected to transmit in a contention slot
-        self.initialize_UE_records()
+        self.selected_UEs = []
         self.debug_mode = debug_mode
-
-    def initialize_UE_records(self) -> None:
-        '''
-        Function to initialize the UE records
-        '''
-        for UE_name in self.UEs:
-            self.UE_records[UE_name] = {}
-            for slot in self.base_schedule.schedule:
-                self.UE_records[UE_name][slot] = {"num_wins": 0, 
-                                                  "num_transmissions": [],
-                                                  "num_contentions": 0}
 
 
     def serve_packets(self, base_schedule: Schedule, service_mode_of_operation: str, 
@@ -547,8 +552,8 @@ class Network:
 
 
                         # save some debug information
-                        # self.selected_UEs.append([base_schedule.schedule[slot].slot_index,
-                        #                           start_time, min_backoff, UEs_to_transmit])
+                        self.selected_UEs.append([base_schedule.schedule[slot].slot_index,
+                                                  start_time, min_backoff, UEs_to_transmit])
 
                         n_packets_transmitted = 0
                         
@@ -592,8 +597,9 @@ class Network:
                                     # exceeds the end time of the slot. Need to fix this in the 
                                     # variable delivery latency case
                                     self.UEs[UE_name].CW = self.UEs[UE_name].CWmin
-                                    self.UE_records[UE_name][slot]["num_wins"] += 1
-                                    self.UE_records[UE_name][slot]["num_transmissions"].append(n_packets_transmitted)
+                                    self.UEs[UE_name].transmission_record[slot]["num_wins"] += 1
+                                    self.UEs[UE_name].transmission_record[slot]["num_transmissions"]\
+                                        .append(n_packets_transmitted)
                                     
                             if n_packets_transmitted > 0:
                                 if self.debug_mode:
@@ -647,9 +653,10 @@ class Network:
                                         self.UEs[UE_name].CW = min(2*self.UEs[UE_name].CW + 1, 
                                                                 self.UEs[UE_name].CWmax)
                                         
-                                    self.UE_records[UE_name][slot]["num_contentions"] += 1
-                                    self.UE_records[UE_name][slot]["num_wins"] += 1
-                                    self.UE_records[UE_name][slot]["num_transmissions"].append(n_packets_transmitted - n_transmitted_old)
+                                    self.UEs[UE_name].transmission_record[slot]["num_contentions"] += 1
+                                    self.UEs[UE_name].transmission_record[slot]["num_wins"] += 1
+                                    self.UEs[UE_name].transmission_record[slot]["num_transmissions"]\
+                                        .append(n_packets_transmitted - n_transmitted_old)
                                     n_transmitted_old = n_packets_transmitted
                                         
 

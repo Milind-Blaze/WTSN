@@ -100,6 +100,7 @@ def run_simulation_for_lambda(lambda_value, lambda_index, schedule, config, para
             UE_temp = UE(i, {1: 0, 2: 1}, UE_arrival[i], UE_serve_mode[i],  num_packets_per_ue, \
                         CWmin=CWmin, CWmax=CWmax)
             UE_temp.set_poisson_lambda(lambda_value)
+            UE_temp.initialize_transmission_record(schedule_contention)
             UE_temp.generate_packets(schedule_contention, packet_sizes, priorities) # TODO: Change this
             UEs_contention[UE_names[i]] = UE_temp
 
@@ -149,6 +150,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("parameters_filename", help = "file containing the wireless parameters")
     parser.add_argument("config_filename", help = "file containing the experiment configuration")
+    parser.add_argument("--show_plots", default = False, help = "enable debug mode", action="store_true")
     args = parser.parse_args()
 
     # In[2]:
@@ -356,14 +358,20 @@ if __name__ == "__main__":
         mean_latencies_across_arrivals = []
         percentile_latencies_across_arrivals = []
         n_packets_not_served_across_arrivals = []
+        contention_wins_across_arrivals = []
+        bus_occupancy_across_arrivals = []
 
         for num_iteration_arrival in results_per_lambda_contention[lambda_value]:
             mean_latencies = []
             percentile_latencies = []
             n_packets_not_served_array = []
+            contention_wins = []
+            bus_occupancy = []
             print("arrival iteration " + str(num_iteration_arrival))
             for iteration in results_per_lambda_contention[lambda_value][num_iteration_arrival]:
                 latencies = []
+                bus_occupancy_across_ues = []
+                contention_wins_across_ues = []
                 n_packets_not_served = 0
                 # print("iteration", iteration)
                 for ue in results_per_lambda_contention[lambda_value][num_iteration_arrival][iteration]:
@@ -373,14 +381,23 @@ if __name__ == "__main__":
                     latencies_UE = [latency for latency in latencies_UE if latency is not None]
                     n_packets_not_served += UE_temp.n_packets - len(latencies_UE)
                     latencies.extend(latencies_UE)
+                    contention_wins_across_ues.append(UE_temp.transmission_record[0]["num_wins"])
+                    bus_occupancy_across_ues.append(np.mean(UE_temp.transmission_record[0]["num_transmissions"]))
+
+
                 print("iteration", iteration)    
                 mean_latencies.append(np.mean(latencies))
                 percentile_latencies.append(compute_percentile(latencies, percentile_to_plot))
                 n_packets_not_served_array.append(n_packets_not_served)
+                contention_wins.append(np.mean(contention_wins_across_ues))
+                bus_occupancy.append(np.mean(bus_occupancy_across_ues))
+
             print("Len(mean_latencies)", len(mean_latencies))
             mean_latencies_across_arrivals.append(np.mean(mean_latencies))
             percentile_latencies_across_arrivals.append(np.mean(percentile_latencies))
             n_packets_not_served_across_arrivals.append(np.mean(n_packets_not_served_array))
+            contention_wins_across_arrivals.append(np.mean(contention_wins))
+            bus_occupancy_across_arrivals.append(np.mean(bus_occupancy))
 
         result_temp = {}        
         result_temp["mean_latency"] = np.mean(mean_latencies_across_arrivals)
@@ -389,6 +406,8 @@ if __name__ == "__main__":
         result_temp["percentile_latency_std"] = np.std(percentile_latencies_across_arrivals)
         result_temp["n_packets_not_served"] = np.mean(n_packets_not_served_across_arrivals)
         result_temp["n_packets_not_served_std"] = np.std(n_packets_not_served_across_arrivals)
+        result_temp["contention_wins"] = np.mean(contention_wins_across_arrivals)
+        result_temp["bus_occupancy"] = np.mean(bus_occupancy_across_arrivals)
         results_allUEs_per_lambda_contention[lambda_value] = result_temp
 
 
@@ -500,7 +519,8 @@ if __name__ == "__main__":
 
 
     plt.savefig(os.path.join(results_directory_experiment, percentile_filename))
-    plt.show()
+    if args.show_plots:
+        plt.show()
 
 
     slope = np.diff(percentiles_contention)/(np.diff(lambda_range)*(schedule_contention.end_time - schedule_contention.start_time))
@@ -512,7 +532,8 @@ if __name__ == "__main__":
             plt.ylim(10**-2, 10**2)
     plt.plot(np.array(lambda_range[1:])*(schedule_contention.end_time - schedule_contention.start_time), slope, ".-")
     plt.savefig(os.path.join(results_directory_experiment, percentile_slope_filename))
-    plt.show()
+    if args.show_plots:
+        plt.show()
 
     print(slope)
     # Plot the mean latency curve
@@ -558,8 +579,8 @@ if __name__ == "__main__":
 
     plt.savefig(os.path.join(results_directory_experiment, mean_filename))
 
-
-    plt.show()
+    if args.show_plots:
+        plt.show()
 
 
     slope = np.diff(mean_latencies_contention)/(np.diff(lambda_range)*(schedule_contention.end_time - schedule_contention.start_time))
@@ -570,7 +591,8 @@ if __name__ == "__main__":
             plt.yscale('log')
     plt.plot(np.array(lambda_range[1:])*(schedule_contention.end_time - schedule_contention.start_time), slope, ".-")
     plt.savefig(os.path.join(results_directory_experiment, mean_slope_filename))
-    plt.show()
+    if args.show_plots:
+        plt.show()
 
     plt.figure(figsize=(10, 8))
     # mean_latencies = []
@@ -615,8 +637,63 @@ if __name__ == "__main__":
 
     plt.savefig(os.path.join(results_directory_experiment, n_packets_not_served_filename))
 
-    plt.show()
+    if args.show_plots:
+        plt.show()
 
+
+
+    bus_occupancy_contention = []
+    for lambda_value in lambda_range:
+        bus_occupancy_contention.append(results_allUEs_per_lambda_contention[lambda_value]["bus_occupancy"])
+    plt.plot(np.array(lambda_range)*(schedule_contention.end_time - schedule_contention.start_time), \
+            bus_occupancy_contention, '.-', label = "contention")
+    # plt.plot(n_packets_generated, percentiles)
+    plt.xlabel("lambda*schedule_duration (us)")
+    plt.ylabel("Bus occupancy")
+    plt.legend()
+
+    if scale == "log":
+            plt.yscale('log')
+
+    title = (f"Simulation 3 Bus occupancy vs lambda, \n PER = {PER},\n"
+            f"num_UEs: {num_UEs}, \n"
+            f"allowed_payload: {payload_size} B, \n "
+            f"packet size: {packet_sizes[0]} B, \n"
+            f"delivery_latency: {delivery_latency} us ,\n"
+            )
+    plt.title(title)
+    # Insert a textbox at the lowest y value of the plot and have y axis be the label
+    plt.tight_layout()
+
+    if args.show_plots:
+        plt.show()
+
+
+    wins_contention = []
+    for lambda_value in lambda_range:
+        wins_contention.append(results_allUEs_per_lambda_contention[lambda_value]["contention_wins"])
+    plt.plot(np.array(lambda_range)*(schedule_contention.end_time - schedule_contention.start_time), \
+            wins_contention, '.-', label = "contention")
+    # plt.plot(n_packets_generated, percentiles)
+    plt.xlabel("lambda*schedule_duration (us)")
+    plt.ylabel("Contention wins")
+    plt.legend()
+
+    if scale == "log":
+            plt.yscale('log')
+
+    title = (f"Simulation 3 Bus occupancy vs lambda, \n PER = {PER},\n"
+            f"num_UEs: {num_UEs}, \n"
+            f"allowed_payload: {payload_size} B, \n "
+            f"packet size: {packet_sizes[0]} B, \n"
+            f"delivery_latency: {delivery_latency} us ,\n"
+            )
+    plt.title(title)
+    # Insert a textbox at the lowest y value of the plot and have y axis be the label
+    plt.tight_layout()
+
+    if args.show_plots:
+        plt.show()
 
 
 
