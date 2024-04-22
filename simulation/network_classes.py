@@ -433,6 +433,7 @@ class Network:
         self.debug_mode = debug_mode
 
 
+
     def serve_packets(self, base_schedule: Schedule, service_mode_of_operation: str, 
                       **kwargs) -> None:
         '''
@@ -521,34 +522,95 @@ class Network:
                                         packet.status = PacketStatus.DROPPED
                                 else:
                                     packet.status = PacketStatus.QUEUED
+                
+                
                 elif base_schedule.schedule[slot].mode == "contention":
                     start_time = base_schedule.schedule[slot].start_time
                     # Contend only with the spcified UEs
                     UEs_to_contend = base_schedule.schedule[slot].UEs
+
+                    # Create queues of all packets to be trasmitted for each UE
+                    # TODO: Check how this works when you have a mix of slots
+                    packets_to_transmit = {}
+                    for UE_name in UEs_to_contend:
+                        packets_per_UE = []
+                        for packet in self.UEs[UE_name].packets:
+                            if packet.arrival_time <= base_schedule.schedule[slot].end_time:
+                                # TODO: dropped and queued packets are treated the same way
+                                if (packet.status == PacketStatus.ARRIVED 
+                                    or packet.status == PacketStatus.QUEUED 
+                                    or packet.status == PacketStatus.DROPPED):
+                                    
+                                    packets_per_UE.append(packet.sequence_number)
+                        
+                        packets_to_transmit[UE_name] = packets_per_UE
+
+
+
+
                     n_transmitted_array = []
                     while start_time < base_schedule.schedule[slot].end_time:
                         # Draw a random backoff time uniformly between 0 and CW for 
                         # each UE and return the minimum backoff time, if there is more than
                         # one UE with the same minimum backoff time, return that list of UEs1
                         # and then draw again
-                        backoff_times = {}
-                        for UE_name in UEs_to_contend:
-                            # TODO: Maybe initialize RNG each time to get different backoff times
-                            backoff_times[UE_name] = np.random.randint(0, self.UEs[UE_name].CW) 
-                        min_backoff = min(backoff_times.values())
-                        # TODO: Check if start_time + min_backoff is less than the end time of the slot
-                        UEs_winning_backoff = [UE_name for UE_name in UEs_to_contend if \
-                                        backoff_times[UE_name] == min_backoff]
-                        assert len(UEs_winning_backoff) > 0, "No UEs to transmit"
                         
-                        # Check that at least one UE has a packet to transmit and if not,
-                        # advance the start_time by 1 and redo the backoff
-                        UEs_to_transmit = [UE_name for UE_name in UEs_winning_backoff if \
-                                        any((packet.arrival_time <= start_time and  
-                                            (packet.status == PacketStatus.ARRIVED 
-                                            or packet.status == PacketStatus.QUEUED 
-                                            or packet.status == PacketStatus.DROPPED)) \
-                                            for packet in self.UEs[UE_name].packets)]
+                        
+                        UEs_with_packets = []
+                        for UE_name in UEs_to_contend:
+                            if len(packets_to_transmit[UE_name]) > 0:
+                                earliest_packet_sequence_number = packets_to_transmit[UE_name][0]
+                                if self.UEs[UE_name].packets[earliest_packet_sequence_number].arrival_time <= start_time:
+                                    UEs_with_packets.append(UE_name)
+                            
+
+                        if len(UEs_with_packets) > 0:
+                            backoff_times = {}
+                            for UE_name in UEs_with_packets:
+                                # TODO: Maybe initialize RNG each time to get different backoff times
+                                backoff_times[UE_name] = np.random.randint(0, self.UEs[UE_name].CW) 
+                            min_backoff = min(backoff_times.values())
+                            # TODO: Check if start_time + min_backoff is less than the end time of the slot
+                            UEs_to_transmit = [UE_name for UE_name in UEs_with_packets if \
+                                            backoff_times[UE_name] == min_backoff]
+                        else:
+                            UEs_to_transmit = []
+                            min_backoff = None
+
+
+                        # backoff_times = {}
+                        # for UE_name in UEs_to_contend:
+                        #     # TODO: Maybe initialize RNG each time to get different backoff times
+                        #     backoff_times[UE_name] = np.random.randint(0, self.UEs[UE_name].CW) 
+                        # min_backoff = min(backoff_times.values())
+                        # # TODO: Check if start_time + min_backoff is less than the end time of the slot
+                        # UEs_winning_backoff = [UE_name for UE_name in UEs_to_contend if \
+                        #                 backoff_times[UE_name] == min_backoff]
+                        
+                        # # CW_array = [self.UEs[UE_name].CW for UE_name in UEs_to_contend]
+                        # # backoff_times = np.random.randint(0, CW_array)
+                        # # min_backoff = np.min(backoff_times)
+                        # # UEs_winning_backoff = np.array(UEs_to_contend)[backoff_times == min_backoff]
+
+                        # assert len(UEs_winning_backoff) > 0, "No UEs to transmit"
+                        
+                        # # Check that at least one UE has a packet to transmit and if not,
+                        # # advance the start_time by 1 and redo the backoff
+                        # UEs_to_transmit = []
+                        # for UE_name in UEs_winning_backoff:
+                        #     if len(packets_to_transmit[UE_name]) > 0:
+                        #         earliest_packet_sequence_number = packets_to_transmit[UE_name][0]
+                        #         if self.UEs[UE_name].packets[earliest_packet_sequence_number].arrival_time <= start_time:
+                        #             UEs_to_transmit.append(UE_name)
+                                
+
+
+                        # UEs_to_transmit = [UE_name for UE_name in UEs_winning_backoff if \
+                        #                 any((packet.arrival_time <= start_time and  
+                        #                     (packet.status == PacketStatus.ARRIVED 
+                        #                     or packet.status == PacketStatus.QUEUED 
+                        #                     or packet.status == PacketStatus.DROPPED)) \
+                        #                     for packet in self.UEs[UE_name].packets)]
 
 
                         # save some debug information
@@ -573,24 +635,48 @@ class Network:
                             if delivery_time <= base_schedule.schedule[slot].end_time:
                                 for UE_name in UEs_to_transmit:
                                     payload_used = 0
-                                    for packet in self.UEs[UE_name].packets:
+                                    # TODO: Check if the slice is being used correctly
+                                    # TODO: Change the slice size once delivery time is calculated
+                                    # dynamically
+                                    for packet_sequence_number in packets_to_transmit[UE_name][:]:
+                                        # TODO: Check if this packet is being used correctly
+                                        packet = self.UEs[UE_name].packets[packet_sequence_number]
                                         if packet.arrival_time <= start_time:
-                                            if (packet.status == PacketStatus.ARRIVED 
-                                                or packet.status == PacketStatus.QUEUED 
-                                                or packet.status == PacketStatus.DROPPED):
-                                                if payload_used + packet.size <= payload_size_contention:
-                                                    payload_used += packet.size 
-                                                    n_packets_transmitted += 1
-                                                    if self.UEs[UE_name].transmit_packet(PER_contention):
-                                                        packet.delivery_time = delivery_time 
-                                                        packet.status = PacketStatus.DELIVERED
-                                                    else:
-                                                        packet.status = PacketStatus.DROPPED
+                                            if payload_used + packet.size <= payload_size_contention:
+                                                payload_used += packet.size 
+                                                n_packets_transmitted += 1
+                                                if self.UEs[UE_name].transmit_packet(PER_contention):
+                                                    packet.delivery_time = delivery_time 
+                                                    packet.status = PacketStatus.DELIVERED
+                                                    packets_to_transmit[UE_name].remove(packet_sequence_number)
+                                                else:
+                                                    packet.status = PacketStatus.DROPPED
+                                            else:
+                                                break
                                         else:
-                                        # assume packets are in ascending order of arrival time
-                                        # if you've already reached the packets that haven't arrived
-                                        # then break and don't evaluate any further
                                             break
+
+
+
+                                    # for packet in self.UEs[UE_name].packets:
+                                    #     if packet.arrival_time <= start_time:
+                                    #         if (packet.status == PacketStatus.ARRIVED 
+                                    #             or packet.status == PacketStatus.QUEUED 
+                                    #             or packet.status == PacketStatus.DROPPED):
+                                    #             if payload_used + packet.size <= payload_size_contention:
+                                    #                 payload_used += packet.size 
+                                    #                 n_packets_transmitted += 1
+                                    #                 if self.UEs[UE_name].transmit_packet(PER_contention):
+                                    #                     packet.delivery_time = delivery_time 
+                                    #                     packet.status = PacketStatus.DELIVERED
+                                    #                     packets_to_transmit[UE_name].remove(packet.sequence_number)
+                                    #                 else:
+                                    #                     packet.status = PacketStatus.DROPPED
+                                    #     else:
+                                    #     # assume packets are in ascending order of arrival time
+                                    #     # if you've already reached the packets that haven't arrived
+                                    #     # then break and don't evaluate any further
+                                    #         break
                                             
                                     # reset the contention window
                                     # TODO: You're skipping cases towards the end where delivery time
@@ -633,17 +719,33 @@ class Network:
                                 n_transmitted_old = 0 # TODO: remove the need for this by cleaning up the logic of the code
                                 for UE_name in UEs_to_transmit: 
                                     payload_used = 0
-                                    for packet in self.UEs[UE_name].packets:
+                                    
+                                    for packet_sequence_number in packets_to_transmit[UE_name][:]:
+                                        # TODO: Check if this packet is being used correctly
+                                        packet = self.UEs[UE_name].packets[packet_sequence_number]
                                         if packet.arrival_time <= start_time:
-                                            if (packet.status == PacketStatus.ARRIVED 
-                                                or packet.status == PacketStatus.QUEUED 
-                                                or packet.status == PacketStatus.DROPPED):
-                                                if payload_used + packet.size <= payload_size_contention:
-                                                    n_packets_transmitted += 1
-                                                    payload_used += packet.size 
-                                                    packet.status = PacketStatus.DROPPED
+                                            if payload_used + packet.size <= payload_size_contention:
+                                                payload_used += packet.size 
+                                                n_packets_transmitted += 1
+                                                packet.status = PacketStatus.DROPPED
+                                            else:
+                                                break
                                         else:
                                             break
+
+                                    # for packet in self.UEs[UE_name].packets:
+                                    #     if packet.arrival_time <= start_time:
+                                    #         if (packet.status == PacketStatus.ARRIVED 
+                                    #             or packet.status == PacketStatus.QUEUED 
+                                    #             or packet.status == PacketStatus.DROPPED):
+                                    #             if payload_used + packet.size <= payload_size_contention:
+                                    #                 n_packets_transmitted += 1
+                                    #                 payload_used += packet.size 
+                                    #                 packet.status = PacketStatus.DROPPED
+                                    #     else:
+                                    #         break
+
+
                                     # double contention window for each UE
                                     if n_packets_transmitted > 0: 
                                     # TODO: enforce behaviour only if at least one packet is transmitted 
