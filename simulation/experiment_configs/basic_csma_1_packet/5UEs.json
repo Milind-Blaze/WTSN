@@ -1,0 +1,19 @@
+{
+    "results_directory_simulation": "../results/simulation_3/basic_csma_1_packet_fast_code",
+    "setting_reserved": "setting 12",
+    "setting_contention": "setting 12",
+    "num_UEs": 5,
+    "num_packets_per_ue": null,
+    "lambda_range_parameters": [[-4.5, -3.56, 5], [-3.5, -3.45, 5]],
+    "num_iterations_contention": [2, 2, 2, 2, 2, 10, 10, 10, 10, 10],
+    "num_iterations_arrival": 40,
+    "CWmin": 15,
+    "CWmax": 1023,
+    "start_offset": 10,
+    "duration": 1500000,
+    "percentile_to_plot": 99,
+    "wifi_slot_time": 9,
+    "DIFS": 34,
+    "mode_contention": "Mode 3",
+    "advance_time": 10
+}
