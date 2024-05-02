@@ -1,7 +1,8 @@
 {
-    "results_directory_simulation": "../results/simulation_3/basic_csma_1_packet_15s",
+    "results_directory_simulation": "../results/simulation_3/basic_csma_1_packet_mode4",
     "setting_reserved": "setting 12",
-    "setting_contention": "setting 12",
+    "setting_contention": "setting 15",
+    "aggregation_limit": 1,
     "num_UEs": 10,
     "num_packets_per_ue": null,
     "lambda_range_parameters": [[-4.5, -3.765, 15]],
@@ -10,10 +11,10 @@
     "CWmin": 15,
     "CWmax": 1023,
     "start_offset": 10,
-    "duration": 15000000,
+    "duration": 1500000,
     "percentile_to_plot": 99,
     "wifi_slot_time": 9,
     "DIFS": 34,
-    "mode_contention": "Mode 3",
+    "mode_contention": "Mode 4",
     "advance_time": 10
 }

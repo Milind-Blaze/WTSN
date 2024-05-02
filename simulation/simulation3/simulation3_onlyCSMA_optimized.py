@@ -57,6 +57,7 @@ def run_simulation_for_lambda(lambda_value, lambda_index, schedule, config, para
                         "contention": parameters[setting_contention]["delivery_latency"]}
     PER = {"reserved":  parameters[setting_reserved]["PER"], 
         "contention":  parameters[setting_contention]["PER"]}
+    aggregation_limit = config["aggregation_limit"]
 
     num_UEs = config["num_UEs"]
     UE_names = ["UE" + str(i) for i in range(num_UEs)]
@@ -143,7 +144,8 @@ def run_simulation_for_lambda(lambda_value, lambda_index, schedule, config, para
                                         payload_size = payload_size,
                                         delivery_latency = delivery_latency,
                                         PER = PER,
-                                        advance_time = advance_time)
+                                        advance_time = advance_time,
+                                        aggregation_limit = aggregation_limit)
             
             
             latencies = []
@@ -251,6 +253,7 @@ def main():
                         "contention": parameters[setting_contention]["delivery_latency"]}
     PER = {"reserved":  parameters[setting_reserved]["PER"], 
         "contention":  parameters[setting_contention]["PER"]}
+    aggregation_limit = config["aggregation_limit"]
 
 
     num_UEs = config["num_UEs"]
@@ -429,6 +432,7 @@ def main():
         "config_file": config_file,
         "setting_reserved": parameters[setting_reserved],
         "setting_contention": parameters[setting_contention],
+        "aggregation_limit": aggregation_limit,
         "num_UEs": num_UEs,
         "num_packets_per_ue": num_packets_per_ue,
         "packet_sizes": packet_sizes,

@@ -1,5 +1,5 @@
 {
-    "results_directory_simulation": "../results/simulation_3/10_UEs_varying_bus_size_fast_code",
+    "results_directory_simulation": "../results/simulation_3/10_UEs_varying_bus_size_30s",
     "setting_reserved": "setting 14",
     "setting_contention": "setting 14",
     "num_UEs": 10,
@@ -10,7 +10,7 @@
     "CWmin": 15,
     "CWmax": 1023,
     "start_offset": 10,
-    "duration": 1500000,
+    "duration": 30000000,
     "percentile_to_plot": 99,
     "wifi_slot_time": 9,
     "DIFS": 34,

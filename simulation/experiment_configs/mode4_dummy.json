@@ -1,7 +1,7 @@
 {
     "results_directory_simulation": "../results/simulation_3/",
     "setting_reserved": "setting 12",
-    "setting_contention": "setting 12",
+    "setting_contention": "setting 15",
     "aggregation_limit": 1,
     "num_UEs": 3,
     "num_packets_per_ue": null,
@@ -15,6 +15,6 @@
     "percentile_to_plot": 99,
     "wifi_slot_time": 9,
     "DIFS": 34,
-    "mode_contention": "Mode 3",
+    "mode_contention": "Mode 4",
     "advance_time": 10
 }

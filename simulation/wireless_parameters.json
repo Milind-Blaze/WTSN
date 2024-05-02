@@ -133,5 +133,14 @@
         "payload_size": 64,
         "aggregation": 5,
         "delivery_latency": 534.2
+    },
+    "setting 15": {
+        "SNR": 38,
+        "Bandwidth": 20,
+        "MCS": 6,
+        "PER": 0,
+        "payload_size": 64,
+        "aggregation": 7000,
+        "delivery_latency": [491, 505.4, 519.8, 534.2, 534.2, 548.6, 563, 577.4, 577.4, 591.8]
     }
 }
