@@ -102,6 +102,7 @@ def run_simulation_for_lambda(lambda_value, lambda_index, schedule, config, para
     n_packets_not_served_across_arrivals = []
     contention_wins_across_arrivals = []
     bus_occupancy_across_arrivals = []
+    queue_slope_across_arrivals = []
 
     for num_arrival_iteration in range(num_iterations_arrival):
         print("\nArrival iteration: " + str(num_arrival_iteration))
@@ -133,6 +134,7 @@ def run_simulation_for_lambda(lambda_value, lambda_index, schedule, config, para
         n_packets_not_served_array = []
         contention_wins = []
         bus_occupancy = []
+        queue_slope = []
         
 
         for i in range(num_iterations_contention[lambda_index]):
@@ -151,6 +153,7 @@ def run_simulation_for_lambda(lambda_value, lambda_index, schedule, config, para
             latencies = []
             bus_occupancy_across_ues = []
             contention_wins_across_ues = []
+            queue_slope_across_ues = []
             n_packets_not_served = 0
 
             for ue in UEs_contention_temp:
@@ -162,12 +165,18 @@ def run_simulation_for_lambda(lambda_value, lambda_index, schedule, config, para
                 latencies.extend(latencies_UE)
                 contention_wins_across_ues.append(UE_temp.transmission_record[0]["num_wins"])
                 bus_occupancy_across_ues.append(np.mean(UE_temp.transmission_record[0]["num_transmissions"]))
+
+                queue_lengths = np.array(UE_temp.transmission_record[0]["queue_information"]["queue_lengths"])
+                queue_times = np.array(UE_temp.transmission_record[0]["queue_information"]["queue_times"])
+                slope, intercept = np.polyfit(queue_times, queue_lengths, 1)
+                queue_slope_across_ues.append(slope)
             
             mean_latencies.append(np.mean(latencies))
             percentile_latencies.append(compute_percentile(latencies, percentile_to_plot))
             n_packets_not_served_array.append(n_packets_not_served)
             contention_wins.append(np.mean(contention_wins_across_ues))
             bus_occupancy.append(np.mean(bus_occupancy_across_ues))
+            queue_slope.append(np.mean(queue_slope_across_ues))
 
             if config["save_UEs"]:
                 print("Save UEs_contetion_temp")
@@ -189,6 +198,7 @@ def run_simulation_for_lambda(lambda_value, lambda_index, schedule, config, para
         n_packets_not_served_across_arrivals.append(np.mean(n_packets_not_served_array))
         contention_wins_across_arrivals.append(np.mean(contention_wins))
         bus_occupancy_across_arrivals.append(np.mean(bus_occupancy))
+        queue_slope_across_arrivals.append(np.mean(queue_slope))
 
 
         # results_per_lambda_per_iteration_contention[num_arrival_iteration] = results_iteration
@@ -202,6 +212,7 @@ def run_simulation_for_lambda(lambda_value, lambda_index, schedule, config, para
     result_temp["n_packets_not_served_std"] = np.std(n_packets_not_served_across_arrivals)
     result_temp["contention_wins"] = np.mean(contention_wins_across_arrivals)
     result_temp["bus_occupancy"] = np.mean(bus_occupancy_across_arrivals)
+    result_temp["queue_slope"] = np.mean(queue_slope_across_arrivals)
 
     return result_temp
 

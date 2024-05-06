@@ -227,7 +227,11 @@ class UE:
         for slot in base_schedule.schedule:
             self.transmission_record[slot] = {"num_wins": 0, 
                                             "num_transmissions": [],
-                                            "num_contentions": 0}
+                                            "num_contentions": 0,
+                                            "queue_information": {
+                                                "queue_times": [],
+                                                "queue_lengths": []
+                                            }}
 
 
 
@@ -809,6 +813,7 @@ class Network:
             assert "reserved" in kwargs['PER'], "PER for reserved slots not provided"
             assert "contention" in kwargs['PER'], "PER for contention slots not provided"
             assert "aggregation_limit" in kwargs, "aggregation_limit not provided"
+            
 
             if "advance_time" in kwargs:
                 advance_time = kwargs["advance_time"]
@@ -876,8 +881,10 @@ class Network:
                     # Create queues of all packets to be trasmitted for each UE
                     # TODO: Check how this works when you have a mix of slots
                     packets_to_transmit = {}
+                    arrival_times = {}
                     for UE_name in UEs_to_contend:
                         packets_per_UE = []
+                        arrivals_per_UE = []
                         for packet in self.UEs[UE_name].packets:
                             if packet.arrival_time <= base_schedule.schedule[slot].end_time:
                                 # TODO: dropped and queued packets are treated the same way
@@ -886,17 +893,28 @@ class Network:
                                     or packet.status == PacketStatus.DROPPED):
                                     
                                     packets_per_UE.append(packet.sequence_number)
+                                    arrivals_per_UE.append(packet.arrival_time)
                         
                         packets_to_transmit[UE_name] = packets_per_UE
+                        arrival_times[UE_name] = arrivals_per_UE
 
 
                     n_transmitted_array = []
+                    queue_measurement_time = start_time
                     while start_time < base_schedule.schedule[slot].end_time:
                         # Draw a random backoff time uniformly between 0 and CW for 
                         # each UE and return the minimum backoff time, if there is more than
                         # one UE with the same minimum backoff time, return that list of UEs1
                         # and then draw again
                         
+
+                        if start_time - queue_measurement_time >= 1000:
+                            for UE_name in UEs_to_contend:
+                                queue_length = bisect.bisect_right(arrival_times[UE_name], start_time)
+                                self.UEs[UE_name].transmission_record[slot]["queue_information"]["queue_lengths"].append(queue_length)
+                                self.UEs[UE_name].transmission_record[slot]["queue_information"]["queue_times"].append(start_time)
+                            queue_measurement_time = start_time
+
                         
                         UEs_with_packets = []
                         for UE_name in UEs_to_contend:
@@ -990,6 +1008,9 @@ class Network:
                                         packet.delivery_time = delivery_time 
                                         packet.status = PacketStatus.DELIVERED
                                         packets_to_transmit[UE_name].remove(packet_sequence_number)
+                                        arrival_times[UE_name].remove(packet.arrival_time)
+                                        assert len(arrival_times[UE_name]) == len(packets_to_transmit[UE_name]), \
+                                            "Arrival times and packets to transmit are not the same length"
                                     else:
                                         packet.status = PacketStatus.DROPPED
                                 
