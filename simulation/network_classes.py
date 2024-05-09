@@ -842,6 +842,13 @@ class Network:
             assert len(delivery_latency_contention) > 1, "Deliver latency is an array"
             
 
+            UEs_all = set()
+            for slot in base_schedule.schedule:
+                UEs_all.update(base_schedule.schedule[slot].UEs)
+            
+            if self.debug_mode:
+                print("UEs for queue measurement: ", UEs_all)
+
             for slot in base_schedule.schedule:
                 if base_schedule.schedule[slot].mode == "reserved":
                     assert len(base_schedule.schedule[slot].UEs) == 1 , "No UEs in reserved slot"
@@ -882,6 +889,7 @@ class Network:
                     # TODO: Check how this works when you have a mix of slots
                     packets_to_transmit = {}
                     arrival_times = {}
+                    # for UE_name in UEs_all:
                     for UE_name in UEs_to_contend:
                         packets_per_UE = []
                         arrivals_per_UE = []
@@ -894,6 +902,8 @@ class Network:
                                     
                                     packets_per_UE.append(packet.sequence_number)
                                     arrivals_per_UE.append(packet.arrival_time)
+                            else: 
+                                break
                         
                         packets_to_transmit[UE_name] = packets_per_UE
                         arrival_times[UE_name] = arrivals_per_UE
@@ -901,6 +911,13 @@ class Network:
 
                     n_transmitted_array = []
                     queue_measurement_time = start_time
+
+                    # Measure queues at the start of the slot
+                    # for UE_name in UEs_all:
+                    for UE_name in UEs_to_contend:
+                        queue_length = bisect.bisect_right(arrival_times[UE_name], start_time)
+                        self.UEs[UE_name].transmission_record[slot]["queue_information"]["queue_lengths"].append(queue_length)
+                        self.UEs[UE_name].transmission_record[slot]["queue_information"]["queue_times"].append(start_time)
                     while start_time < base_schedule.schedule[slot].end_time:
                         # Draw a random backoff time uniformly between 0 and CW for 
                         # each UE and return the minimum backoff time, if there is more than
@@ -909,6 +926,7 @@ class Network:
                         
 
                         if start_time - queue_measurement_time >= 1000:
+                            # for UE_name in UEs_all:
                             for UE_name in UEs_to_contend:
                                 queue_length = bisect.bisect_right(arrival_times[UE_name], start_time)
                                 self.UEs[UE_name].transmission_record[slot]["queue_information"]["queue_lengths"].append(queue_length)
@@ -948,12 +966,15 @@ class Network:
                         
                         if len(UEs_to_transmit) == 0:
                             start_time = start_time + advance_time
+                            if start_time > base_schedule.schedule[slot].end_time:
+                                start_time = base_schedule.schedule[slot].end_time
                             
                             # Find the minimum packet arrival time for a packet that is  among the UEs which is greater than
                             # the current start time 
 
                             if self.debug_mode:
                                 print("start_time: ", start_time)
+                                print("UEs: ", UEs_to_transmit)
 
                         elif len(UEs_to_transmit) == 1:
                             # Transmit all packets that have arrived till this point (start_time)
@@ -1030,13 +1051,20 @@ class Network:
                                     print("UEs: ", UEs_to_transmit)
                                     print("\n")
                             elif n_packets_transmitted == 0:
-                                start_time = start_time + advance_time
-                                if self.debug_mode:
-                                    # This gets triggered towards the end of the slot
-                                    # as delivery time exceeds the end time of the slot 
-                                    print("Should not happen! start_time (advanced): ", start_time)
-                                    print("UEs: ", UEs_to_transmit)
-                                    print("\n")
+                                if max_packets_time_remaining == 0:
+                                    start_time = base_schedule.schedule[slot].end_time
+                                    if self.debug_mode:
+                                        print("Start time advanced to end")
+                                        print("Single UE, no packets transmitted")
+                                        print("start_time: ", start_time)
+                                else:
+                                    start_time = start_time + advance_time
+                                    if self.debug_mode:
+                                        # This gets triggered towards the end of the slot
+                                        # as delivery time exceeds the end time of the slot 
+                                        print("Should not happen! start_time (advanced): ", start_time)
+                                        print("UEs: ", UEs_to_transmit)
+                                        print("\n")
 
                             # print("n_packets_transmitted : ", n_packets_transmitted)
                             n_transmitted_array.append(n_packets_transmitted)
@@ -1126,16 +1154,23 @@ class Network:
                                     print("UEs: ", UEs_to_transmit)
                                     print("\n")
                             elif total_packets_transmitted == 0:
-                                start_time = start_time + advance_time
-                                if self.debug_mode:
-                                    # This gets triggered towards the end of the slot
-                                    # as delivery time exceeds the end time of the slot
-                                    print("Should not happen! start_time: ", start_time)
-                                    print("UEs: ", UEs_to_transmit)
-                                    print("Line collision Delivery time: ", delivery_times)
-                                    print("\n")
+                                if max_packets_time_remaining == 0:
+                                    start_time = base_schedule.schedule[slot].end_time
+                                    if self.debug_mode:
+                                        print("Start time advanced to end")
+                                        print("Single UE, no packets transmitted")
+                                        print("start_time: ", start_time)
+                                else:
+                                    start_time = start_time + advance_time
+                                    if self.debug_mode:
+                                        # This gets triggered towards the end of the slot
+                                        # as delivery time exceeds the end time of the slot
+                                        print("Should not happen! start_time: ", start_time)
+                                        print("UEs: ", UEs_to_transmit)
+                                        print("Line collision Delivery time: ", delivery_times)
+                                        print("\n")
 
-                    print("Mean packets transmitted: ", np.mean(n_transmitted_array))
+                    # print("Mean packets transmitted: ", np.mean(n_transmitted_array))
                     # print("array of transmission numbers: ", n_transmitted_array)
                 
 
