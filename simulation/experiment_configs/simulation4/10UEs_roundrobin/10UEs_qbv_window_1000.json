@@ -12,7 +12,7 @@
     "CWmin": 15,
     "CWmax": 1023,
     "start_offset": 10,
-    "duration": 15000000,
+    "duration": 1500000,
     "percentile_to_plot": 99,
     "wifi_slot_time": 9,
     "DIFS": 34,
