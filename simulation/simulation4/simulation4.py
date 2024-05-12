@@ -34,6 +34,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 from network_classes import *
 from utils import *
+from schedules import *
 
 # @profile
 def run_simulation_for_lambda(lambda_value, lambda_index, schedule, config, parameters,\
@@ -330,22 +331,8 @@ def main():
     # schedule_contention = Schedule(start_offset, end_time, 1, slots_temp)
 
 
-    slots_temp = {}
-    qbv_start_time = start_offset
-    num_slot = 0
-    while qbv_start_time < end_time:
-        qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
-        UE_name = UE_names[(num_slot % num_UEs)]
-        UE_names_temp = [UE_name]
-        slots_temp[num_slot] = Slot(num_slot,\
-                                    qbv_start_time,\
-                                    qbv_end_time,
-                                    "contention",
-                                    UE_names_temp)
-        num_slot += 1
-        qbv_start_time = qbv_end_time
-
-    schedule_contention = Schedule(start_offset, end_time, num_slot, slots_temp)
+    schedule_contention = create_schedule(UE_names, "roundrobin", start_offset, end_time,\
+                                      qbv_window_size = qbv_window_size)
 
     # print(schedule_reserved)
     print(schedule_contention)
