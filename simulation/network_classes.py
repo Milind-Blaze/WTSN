@@ -849,6 +849,32 @@ class Network:
             if self.debug_mode:
                 print("UEs for queue measurement: ", UEs_all)
 
+            # Create queues of all packets to be trasmitted for each UE
+            # TODO: Check how this works when you have a mix of slots
+            packets_to_transmit = {}
+            arrival_times = {}
+            # for UE_name in UEs_all:
+            for UE_name in UEs_all:
+                packets_per_UE = []
+                arrivals_per_UE = []
+                for packet in self.UEs[UE_name].packets:
+                    if packet.arrival_time <= base_schedule.end_time:
+                        # TODO: dropped and queued packets are treated the same way
+                        if (packet.status == PacketStatus.ARRIVED 
+                            or packet.status == PacketStatus.QUEUED 
+                            or packet.status == PacketStatus.DROPPED):
+                            
+                            packets_per_UE.append(packet.sequence_number)
+                            arrivals_per_UE.append(packet.arrival_time)
+                    else: 
+                        break
+                
+                packets_to_transmit[UE_name] = packets_per_UE
+                arrival_times[UE_name] = arrivals_per_UE
+
+
+
+
             for slot in base_schedule.schedule:
                 if base_schedule.schedule[slot].mode == "reserved":
                     assert len(base_schedule.schedule[slot].UEs) == 1 , "No UEs in reserved slot"
@@ -885,36 +911,12 @@ class Network:
                     # Contend only with the spcified UEs
                     UEs_to_contend = base_schedule.schedule[slot].UEs
 
-                    # Create queues of all packets to be trasmitted for each UE
-                    # TODO: Check how this works when you have a mix of slots
-                    packets_to_transmit = {}
-                    arrival_times = {}
-                    # for UE_name in UEs_all:
-                    for UE_name in UEs_to_contend:
-                        packets_per_UE = []
-                        arrivals_per_UE = []
-                        for packet in self.UEs[UE_name].packets:
-                            if packet.arrival_time <= base_schedule.schedule[slot].end_time:
-                                # TODO: dropped and queued packets are treated the same way
-                                if (packet.status == PacketStatus.ARRIVED 
-                                    or packet.status == PacketStatus.QUEUED 
-                                    or packet.status == PacketStatus.DROPPED):
-                                    
-                                    packets_per_UE.append(packet.sequence_number)
-                                    arrivals_per_UE.append(packet.arrival_time)
-                            else: 
-                                break
-                        
-                        packets_to_transmit[UE_name] = packets_per_UE
-                        arrival_times[UE_name] = arrivals_per_UE
-
-
                     n_transmitted_array = []
                     queue_measurement_time = start_time
 
                     # Measure queues at the start of the slot
                     # for UE_name in UEs_all:
-                    for UE_name in UEs_to_contend:
+                    for UE_name in UEs_all:
                         queue_length = bisect.bisect_right(arrival_times[UE_name], start_time)
                         self.UEs[UE_name].transmission_record[slot]["queue_information"]["queue_lengths"].append(queue_length)
                         self.UEs[UE_name].transmission_record[slot]["queue_information"]["queue_times"].append(start_time)
@@ -927,7 +929,7 @@ class Network:
 
                         if start_time - queue_measurement_time >= 1000:
                             # for UE_name in UEs_all:
-                            for UE_name in UEs_to_contend:
+                            for UE_name in UEs_all:
                                 queue_length = bisect.bisect_right(arrival_times[UE_name], start_time)
                                 self.UEs[UE_name].transmission_record[slot]["queue_information"]["queue_lengths"].append(queue_length)
                                 self.UEs[UE_name].transmission_record[slot]["queue_information"]["queue_times"].append(start_time)
@@ -1010,7 +1012,7 @@ class Network:
                                     if self.debug_mode:
                                         print("n_packets_transmitted: ", n_packets_transmitted)
                                         print("packet_sequence_number: ", packets_to_transmit[UE_name][n_packets_transmitted])
-                                        print(" packets_to_transmit[UE_name]: ",  packets_to_transmit[UE_name])
+                                        print(" packets_to_transmit[UE_name][:10]: ",  packets_to_transmit[UE_name][:10])
 
                                     packet_sequence_number = packets_to_transmit[UE_name][n_packets_transmitted]
                                     packet = self.UEs[UE_name].packets[packet_sequence_number]
