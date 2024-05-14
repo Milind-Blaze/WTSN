@@ -353,7 +353,7 @@ def main():
 
 
     # Save the schedule figure
-    save_schedule_plot(UE_names, schedule_contention, start_offset, end_time, \
+    save_schedule_plot(UE_names, schedule_contention, start_offset, 0.001*end_time, \
                         os.path.join(results_directory_experiment, "schedule.png"))
 
 
