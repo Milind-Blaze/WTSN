@@ -301,7 +301,8 @@ def main():
     ## Schedule parameters for reserved base schedule
     start_offset = config["start_offset"] # microseconds
     end_time = config["duration"] + start_offset # microseconds
-    qbv_window_size = config["qbv_window_size"]
+    schedule_config = config["schedule_config"]
+
 
 
     # Network properties
@@ -331,8 +332,7 @@ def main():
     # schedule_contention = Schedule(start_offset, end_time, 1, slots_temp)
 
 
-    schedule_contention = create_schedule(UE_names, "roundrobin", start_offset, end_time,\
-                                      qbv_window_size = qbv_window_size)
+    schedule_contention = create_schedule(UE_names, start_offset, end_time, schedule_config)
 
     # print(schedule_reserved)
     print(schedule_contention)
@@ -459,7 +459,7 @@ def main():
         "setting_reserved": parameters[setting_reserved],
         "setting_contention": parameters[setting_contention],
         "aggregation_limit": aggregation_limit,
-        "qbv_window_size": qbv_window_size,
+        "schedule_config": schedule_config,
         "num_UEs": num_UEs,
         "num_packets_per_ue": num_packets_per_ue,
         "packet_sizes": packet_sizes,
