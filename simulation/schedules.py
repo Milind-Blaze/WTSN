@@ -99,7 +99,7 @@ def create_schedule(UE_names: list, start_time: float, end_time: float, schedule
             UE_names_temp = []
             if num_slot%2 == 0:
                 for i in range(num_UEs_together):
-                    UE_names_temp.append(UE_names[((num_slot/2 + i) % num_UEs)])
+                    UE_names_temp.append(UE_names[(int(num_slot/2 + i) % num_UEs)])
                 qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
             else:
                 UE_names_temp = UE_names
