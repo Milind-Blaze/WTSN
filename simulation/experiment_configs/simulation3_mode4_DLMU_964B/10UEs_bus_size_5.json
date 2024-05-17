@@ -5,7 +5,7 @@
     "aggregation_limit": 5,
     "num_UEs": 10,
     "num_packets_per_ue": null,
-    "lambda_range_parameters": [[-4.5, -3.39, 8], [-3.35, -3.12, 12]],
+    "lambda_range_parameters": [[-4.5, -3.9, 8], [-3.8, -3.34, 12]],
     "num_iterations_contention": [2, 2, 2, 2, 2, 2, 2, 2, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
     "num_iterations_arrival": 25,
     "CWmin": 15,
