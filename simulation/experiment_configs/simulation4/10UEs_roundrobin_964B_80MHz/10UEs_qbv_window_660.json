@@ -9,7 +9,7 @@
     "num_packets_per_ue": null,
     "lambda_range_parameters": [[-4.5, -3.3, 8], [-3.28, -3.1, 12]],
     "num_iterations_contention": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    "num_iterations_arrival": 25,
+    "num_iterations_arrival": 1,
     "CWmin": 15,
     "CWmax": 1023,
     "start_offset": 10,
