@@ -93,9 +93,9 @@ python3 simulation3_onlyCSMA_optimized.py ../wireless_parameters/wireless_parame
 echo "10 aggr"
 python3 simulation3_onlyCSMA_optimized.py ../wireless_parameters/wireless_parameters_DL_MU_964B_80MHz.json ../experiment_configs/simulation3_mode4_DLMU_964B_80MHz/10UEs_bus_size_10.json > logs/10aggr.log
 
-echo "20 aggr"
-python3 simulation3_onlyCSMA_optimized.py ../wireless_parameters/wireless_parameters_DL_MU_964B_80MHz.json ../experiment_configs/simulation3_mode4_DLMU_964B_80MHz/10UEs_bus_size_20.json > logs/20aggr.log
+# echo "20 aggr"
+# python3 simulation3_onlyCSMA_optimized.py ../wireless_parameters/wireless_parameters_DL_MU_964B_80MHz.json ../experiment_configs/simulation3_mode4_DLMU_964B_80MHz/10UEs_bus_size_20.json > logs/20aggr.log
 
-echo "30 aggr"
-python3 simulation3_onlyCSMA_optimized.py ../wireless_parameters/wireless_parameters_DL_MU_964B_80MHz.json ../experiment_configs/simulation3_mode4_DLMU_964B_80MHz/10UEs_bus_size_30.json > logs/40aggr.log
+# echo "30 aggr"
+# python3 simulation3_onlyCSMA_optimized.py ../wireless_parameters/wireless_parameters_DL_MU_964B_80MHz.json ../experiment_configs/simulation3_mode4_DLMU_964B_80MHz/10UEs_bus_size_30.json > logs/40aggr.log
 
