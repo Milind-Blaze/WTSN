@@ -332,7 +332,7 @@ def main():
     # schedule_contention = Schedule(start_offset, end_time, 1, slots_temp)
 
 
-    schedule_contention = create_schedule(UE_names, start_offset, end_time, schedule_config)
+    schedule_contention, cycle_time = create_schedule(UE_names, start_offset, end_time, schedule_config)
 
     # print(schedule_reserved)
     print(schedule_contention)
@@ -353,7 +353,7 @@ def main():
 
 
     # Save the schedule figure
-    save_schedule_plot(UE_names, schedule_contention, start_offset, 0.1*end_time, \
+    save_schedule_plot(UE_names, schedule_contention, start_offset, cycle_time + 100, \
                         os.path.join(results_directory_experiment, "schedule.png"))
 
 
