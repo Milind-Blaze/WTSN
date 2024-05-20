@@ -205,6 +205,8 @@ def create_schedule_dynamic(UE_names: list, start_time: float, end_time: float, 
             if num_UEs*slot_length_temp*lambda_value < delivery_latency_index:
                 qbv_window_size = slot_length_temp
                 break
+            elif delivery_latency_index == len(delivery_latency) - 1:
+                qbv_window_size = slot_length_temp
 
 
 
