@@ -210,6 +210,65 @@ def create_schedule(UE_names: list, start_time: float, end_time: float, schedule
 
         return (schedule_contention, cycle_time)
     
+    elif schedule_name == "schedule 5":
+        
+
+        assert "qbv_window_size" in schedule_config, "schedule 3 requires 'qbv_window_size' parameter"
+        assert "num_UEs_together_qbv" in schedule_config, "schedule 3 requires 'num_UEs_together' parameter"
+        assert "contention_window_size" in schedule_config, "schedule 3 requires 'contention_window_size' parameter"
+        assert "num_UEs_together_contention" in schedule_config, "schedule 3 requires 'num_UEs_together' parameter"
+
+        qbv_window_size = schedule_config["qbv_window_size"]
+        num_UEs_together_qbv = schedule_config["num_UEs_together_qbv"]
+        contention_window_size = schedule_config["contention_window_size"]
+        num_UEs_together_contention = schedule_config["num_UEs_together_contention"]
+
+        assert num_UEs_together_qbv < len(UE_names), "Number of UEs together should be less than \
+             or equal to the total number of UEs"
+        assert num_UEs_together_contention < len(UE_names), "Number of UEs together should be less than \
+             or equal to the total number of UEs"
+
+        num_UEs = len(UE_names)
+        slots_temp = {}
+        qbv_start_time = start_time
+
+        forward = True
+        forward_counter = 0
+        backward_counter = num_UEs - 1
+
+        num_slot = 0
+        while qbv_start_time < end_time:
+            
+            UE_names_temp = []
+
+            if forward:
+                for i in range(num_UEs_together_qbv):
+                    UE_names_temp.append(UE_names[(forward_counter + i) % num_UEs])
+                qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
+                forward_counter += 1
+            else:
+                for i in range(num_UEs_together_contention):
+                    UE_names_temp.append(UE_names[(backward_counter - i) % num_UEs])
+                qbv_end_time = min(qbv_start_time + contention_window_size, end_time)
+                backward_counter -= 1
+
+            forward = not forward
+
+            
+            slots_temp[num_slot] = Slot(num_slot,\
+                                        qbv_start_time,\
+                                        qbv_end_time,
+                                        "contention",
+                                        UE_names_temp)
+            num_slot += 1
+            qbv_start_time = qbv_end_time
+            if num_slot == 2*num_UEs:
+                cycle_time = qbv_end_time
+
+        schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
+
+        return (schedule_contention, 10*cycle_time)
+    
     
     
 
