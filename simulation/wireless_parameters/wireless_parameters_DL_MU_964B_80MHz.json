@@ -1,10 +1,10 @@
 {
     "setting 0": {
         "SNR": 38,
-        "Bandwidth": 20,
+        "Bandwidth": 80,
         "MCS": 0,
         "PER": 0,
-        "payload_size": 64,
+        "payload_size": 964,
         "aggregation": 32,
         "delivery_latency": [
             728.0,
@@ -43,10 +43,10 @@
     },
     "setting 1": {
         "SNR": 38,
-        "Bandwidth": 20,
+        "Bandwidth": 80,
         "MCS": 1,
         "PER": 0,
-        "payload_size": 64,
+        "payload_size": 964,
         "aggregation": 32,
         "delivery_latency": [
             598.4,
@@ -85,10 +85,10 @@
     },
     "setting 2": {
         "SNR": 38,
-        "Bandwidth": 20,
+        "Bandwidth": 80,
         "MCS": 2,
         "PER": 0,
-        "payload_size": 64,
+        "payload_size": 964,
         "aggregation": 32,
         "delivery_latency": [
             555.2,
@@ -127,10 +127,10 @@
     },
     "setting 3": {
         "SNR": 38,
-        "Bandwidth": 20,
+        "Bandwidth": 80,
         "MCS": 3,
         "PER": 0,
-        "payload_size": 64,
+        "payload_size": 964,
         "aggregation": 32,
         "delivery_latency": [
             540.8,
@@ -169,10 +169,10 @@
     },
     "setting 4": {
         "SNR": 38,
-        "Bandwidth": 20,
+        "Bandwidth": 80,
         "MCS": 4,
         "PER": 0,
-        "payload_size": 64,
+        "payload_size": 964,
         "aggregation": 32,
         "delivery_latency": [
             512.0,
@@ -211,10 +211,10 @@
     },
     "setting 5": {
         "SNR": 38,
-        "Bandwidth": 20,
+        "Bandwidth": 80,
         "MCS": 5,
         "PER": 0,
-        "payload_size": 64,
+        "payload_size": 964,
         "aggregation": 32,
         "delivery_latency": [
             512.0,
@@ -253,10 +253,10 @@
     },
     "setting 6": {
         "SNR": 38,
-        "Bandwidth": 20,
+        "Bandwidth": 80,
         "MCS": 6,
         "PER": 0,
-        "payload_size": 64,
+        "payload_size": 964,
         "aggregation": 32,
         "delivery_latency": [
             497.6,
@@ -295,10 +295,10 @@
     },
     "setting 7": {
         "SNR": 38,
-        "Bandwidth": 20,
+        "Bandwidth": 80,
         "MCS": 7,
         "PER": 0,
-        "payload_size": 64,
+        "payload_size": 964,
         "aggregation": 32,
         "delivery_latency": [
             497.6,
@@ -337,10 +337,10 @@
     },
     "setting 8": {
         "SNR": 38,
-        "Bandwidth": 20,
+        "Bandwidth": 80,
         "MCS": 8,
         "PER": 0,
-        "payload_size": 64,
+        "payload_size": 964,
         "aggregation": 32,
         "delivery_latency": [
             497.6,
@@ -379,10 +379,10 @@
     },
     "setting 9": {
         "SNR": 38,
-        "Bandwidth": 20,
+        "Bandwidth": 80,
         "MCS": 9,
         "PER": 0,
-        "payload_size": 64,
+        "payload_size": 964,
         "aggregation": 32,
         "delivery_latency": [
             497.6,
