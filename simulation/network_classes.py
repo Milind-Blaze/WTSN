@@ -916,10 +916,31 @@ class Network:
 
                     # Measure queues at the start of the slot
                     # for UE_name in UEs_all:
+                    max_queue_length = 0
+                    queue_lengths_this_slot = []
                     for UE_name in UEs_all:
                         queue_length = bisect.bisect_right(arrival_times[UE_name], start_time)
+                        queue_lengths_this_slot.append(queue_length)
                         self.UEs[UE_name].transmission_record[slot]["queue_information"]["queue_lengths"].append(queue_length)
                         self.UEs[UE_name].transmission_record[slot]["queue_information"]["queue_times"].append(start_time)
+                        if queue_length > max_queue_length:
+                            max_queue_length = queue_length
+                    
+                    if len(UEs_to_contend) == 0:
+                        if max_queue_length == 0:
+                            UEs_to_contend = UEs_all
+                        else:
+                            for UE_name in UEs_all:
+                                if self.UEs[UE_name].transmission_record[slot]["queue_information"]["queue_lengths"][-1] == max_queue_length:
+                                    UEs_to_contend.append(UE_name)
+                                    break
+                        if self.debug_mode:
+                            print("start time: ", start_time)
+                            print("UEs to contend after max weight: ", UEs_to_contend)
+                            print("queue lengths:",queue_lengths_this_slot)
+
+
+
                     while start_time < base_schedule.schedule[slot].end_time:
                         # Draw a random backoff time uniformly between 0 and CW for 
                         # each UE and return the minimum backoff time, if there is more than

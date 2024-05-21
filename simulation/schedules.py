@@ -171,6 +171,47 @@ def create_schedule(UE_names: list, start_time: float, end_time: float, schedule
         schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
 
         return (schedule_contention, cycle_time)
+    
+    elif schedule_name == "roundrobin blank":
+
+        assert "qbv_window_size" in schedule_config, "Round Robin schedule requires 'qbv_window_size' parameter"
+        qbv_window_size = schedule_config["qbv_window_size"]
+
+        num_UEs = len(UE_names)
+        slots_temp = {}
+        qbv_start_time = start_time
+        num_slot = 0
+
+        # Create the first slot with all the UEs
+        slots_temp[num_slot] = Slot(num_slot,\
+                                    qbv_start_time,\
+                                    qbv_start_time + qbv_window_size,
+                                    "contention",
+                                    UE_names)
+        num_slot += 1
+        qbv_start_time += qbv_window_size
+
+
+        while qbv_start_time < end_time:
+            qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
+            UE_names_temp = []
+            slots_temp[num_slot] = Slot(num_slot,\
+                                        qbv_start_time,\
+                                        qbv_end_time,
+                                        "contention",
+                                        UE_names_temp)
+            num_slot += 1
+            qbv_start_time = qbv_end_time
+
+            if num_slot == num_UEs:
+                cycle_time = qbv_end_time 
+
+        schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
+
+        return (schedule_contention, cycle_time)
+    
+    
+    
 
 
 
