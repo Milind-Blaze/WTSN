@@ -1,5 +1,5 @@
 {
-    "results_directory_simulation": "../results/simulation5/10UEs_dynamic_rr",
+    "results_directory_simulation": "../results/simulation5/10UEs_dynamic_max_weight",
     "setting_reserved": "setting 0",
     "setting_contention": "setting 6",
     "aggregation_limit": 104,
