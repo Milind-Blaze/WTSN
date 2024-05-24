@@ -7,6 +7,7 @@ Author: Milind Kumar Vaddiraju, ChatGPT, Copilot
 # Necessary imports
 
 import bisect
+import copy
 from enum import Enum
 import matplotlib.pyplot as plt
 import numpy as np
@@ -909,7 +910,7 @@ class Network:
                 elif base_schedule.schedule[slot].mode == "contention":
                     start_time = base_schedule.schedule[slot].start_time
                     # Contend only with the spcified UEs
-                    UEs_to_contend = base_schedule.schedule[slot].UEs
+                    UEs_to_contend = copy.deepcopy(base_schedule.schedule[slot].UEs)
 
                     n_transmitted_array = []
                     queue_measurement_time = start_time
@@ -928,16 +929,21 @@ class Network:
                     
                     if len(UEs_to_contend) == 0:
                         if max_queue_length == 0:
-                            UEs_to_contend = UEs_all
+                            UEs_to_contend = copy.deepcopy(UEs_all)
                         else:
                             for UE_name in UEs_all:
                                 if self.UEs[UE_name].transmission_record[slot]["queue_information"]["queue_lengths"][-1] == max_queue_length:
                                     UEs_to_contend.append(UE_name)
                                     break
                         if self.debug_mode:
-                            print("start time: ", start_time)
+                            print("\n\nstart time: ", start_time)
                             print("UEs to contend after max weight: ", UEs_to_contend)
                             print("queue lengths:",queue_lengths_this_slot)
+                    else:
+                        if self.debug_mode:
+                            print("\n\nstart time: ", start_time)
+                            print("UEs to contend, NO max weight: ", UEs_to_contend)
+                            print("queue lengths:", queue_lengths_this_slot)
 
 
 
@@ -1034,6 +1040,7 @@ class Network:
                                         print("n_packets_transmitted: ", n_packets_transmitted)
                                         print("packet_sequence_number: ", packets_to_transmit[UE_name][n_packets_transmitted])
                                         print(" packets_to_transmit[UE_name][:10]: ",  packets_to_transmit[UE_name][:10])
+                                        print("arrival_times[UE_name][:10]: ", arrival_times[UE_name][:10])
 
                                     packet_sequence_number = packets_to_transmit[UE_name][n_packets_transmitted]
                                     packet = self.UEs[UE_name].packets[packet_sequence_number]

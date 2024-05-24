@@ -17,6 +17,8 @@ with open(template_config_path, 'r') as f:
 
 num_UEs_together_list = [2]
 qbv_window_sizes = [690, 1000, 1250, 1500, 2000, 2500]
+lambda_range_parameters = [[-4.5, -2.68, 20]]
+contention_iterations = [5]*20
 # contention_window_sizes = [1500, 3000, 4500]
 # num_UEs_together = 2
 results_directory_base = "../results/simulation_4/10UEs_grouped_roundrobin_964B_80MHz/"
@@ -29,6 +31,8 @@ for num_UEs in num_UEs_together_list:
         config["schedule_config"]["qbv_window_size"] = qbv_window_size
         config["results_directory_simulation"] = results_directory_base + f"num_UEs_together_{num_UEs}"
         config["num_iterations_arrival"] = 10
+        config["lambda_range_parameters"] = lambda_range_parameters
+        config["num_iterations_contention"] = contention_iterations
 
         os.makedirs(configs_output_folder, exist_ok=True)
         config_name = f"{num_UEs}_UEs_{qbv_window_size}_qbv.json"
