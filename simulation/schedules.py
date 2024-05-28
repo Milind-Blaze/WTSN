@@ -5,6 +5,7 @@ Author: Milind Kumar Vaddiraju, ChatGPT, CoPilot
 """
 
 import numpy as np
+import random
 
 from network_classes import *
 
@@ -277,36 +278,41 @@ def create_schedule(UE_names: list, start_time: float, end_time: float, schedule
     
     elif schedule_name == "contention 5 apart 10UEs":
 
-        assert "qbv_window_size" in schedule_config, "Round Robin schedule requires 'qbv_window_size' parameter"
+        assert "qbv_window_size" in schedule_config, "Schedule requires 'qbv_window_size' parameter"
+        assert "contention_window_size" in schedule_config, "Schedule requires 'contention_window_size' parameter"
         qbv_window_size = schedule_config["qbv_window_size"]
+        contention_window_size = schedule_config["contention_window_size"]
 
         num_UEs = len(UE_names)
         slots_temp = {}
         qbv_start_time = start_time
         num_slot = 0
 
-        contention_counter = 0
+
+
+        schedule = [["UE0"], ["UE1"], ["UE2"], ["UE3"], ["UE4"], ["UE0","UE9"],\
+                    ["UE5"], ["UE6"], ["UE7"], ["UE8"], ["UE9"], ["UE4", "UE5"]]
 
         while qbv_start_time < end_time:
-            qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
-            UE_names_temp = []
+            
+            
 
-            if num_slot%5 == 0:
-                contention_counter += 1
-                if (num_slot/5)%2 == 0:
-                    UE_names_temp = ["UE4", "UE5"]
-                else:
-                    UE_names_temp = ["UE0", "UE9"]
+            if (schedule[num_slot%len(schedule)] == ["UE0", "UE9"] or \
+                schedule[num_slot%len(schedule)] == ["UE4", "UE5"]):
+                qbv_end_time = min(qbv_start_time + contention_window_size, end_time)
             else:
-                UE_names_temp = [UE_names[((num_slot - contention_counter) % num_UEs)]]
+                qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
+
+            
 
 
             slots_temp[num_slot] = Slot(num_slot,\
                                         qbv_start_time,\
                                         qbv_end_time,
                                         "contention",
-                                        UE_names_temp)
+                                        schedule[num_slot%len(schedule)])
             num_slot += 1
+
             qbv_start_time = qbv_end_time
 
             if num_slot == num_UEs+2:
@@ -315,7 +321,165 @@ def create_schedule(UE_names: list, start_time: float, end_time: float, schedule
         schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
 
         return (schedule_contention, 10*cycle_time)
+    
+    elif schedule_name == "roundrobin then contention":
 
+        assert "qbv_window_size" in schedule_config, "Schedule requires 'qbv_window_size' parameter"
+        assert "contention_window_size" in schedule_config, "Schedule requires 'contention_window_size' parameter"
+        qbv_window_size = schedule_config["qbv_window_size"]
+        contention_window_size = schedule_config["contention_window_size"]
+
+        num_UEs = len(UE_names)
+        slots_temp = {}
+        qbv_start_time = start_time
+        num_slot = 0
+
+
+
+        schedule = [[UE_names[i]] for i in range(num_UEs)]
+        schedule.append(UE_names)
+
+        while qbv_start_time < end_time:
+            
+            
+
+            if (num_slot%len(schedule) == num_UEs):
+                qbv_end_time = min(qbv_start_time + contention_window_size, end_time)
+            else:
+                qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
+
+            
+
+
+            slots_temp[num_slot] = Slot(num_slot,\
+                                        qbv_start_time,\
+                                        qbv_end_time,
+                                        "contention",
+                                        schedule[num_slot%len(schedule)])
+            num_slot += 1
+
+            qbv_start_time = qbv_end_time
+
+            if num_slot == num_UEs+1:
+                cycle_time = qbv_end_time 
+
+        schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
+
+        return (schedule_contention, cycle_time)
+    
+    if schedule_name == "random roundrobin":
+
+        assert "qbv_window_size" in schedule_config, "Round Robin schedule requires 'qbv_window_size' parameter"
+        qbv_window_size = schedule_config["qbv_window_size"]
+
+        num_UEs = len(UE_names)
+        slots_temp = {}
+        qbv_start_time = start_time
+        num_slot = 0
+        while qbv_start_time < end_time:
+            qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
+            UE_name = random.choice(UE_names)
+            UE_names_temp = [UE_name]
+            slots_temp[num_slot] = Slot(num_slot,\
+                                        qbv_start_time,\
+                                        qbv_end_time,
+                                        "contention",
+                                        UE_names_temp)
+            num_slot += 1
+            qbv_start_time = qbv_end_time
+
+            if num_slot == num_UEs:
+                cycle_time = qbv_end_time 
+
+        schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
+
+        return (schedule_contention, cycle_time)
+    
+
+    if schedule_name == "shuffle roundrobin":
+
+        assert "qbv_window_size" in schedule_config, "Round Robin schedule requires 'qbv_window_size' parameter"
+        qbv_window_size = schedule_config["qbv_window_size"]
+
+        num_UEs = len(UE_names)
+        slots_temp = {}
+        qbv_start_time = start_time
+        num_slot = 0
+        while qbv_start_time < end_time:
+            qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
+
+            if num_slot%num_UEs == 0:
+                random.shuffle(UE_names)
+
+            UE_name = UE_names[(num_slot % num_UEs)]
+            UE_names_temp = [UE_name]
+            slots_temp[num_slot] = Slot(num_slot,\
+                                        qbv_start_time,\
+                                        qbv_end_time,
+                                        "contention",
+                                        UE_names_temp)
+            num_slot += 1
+            qbv_start_time = qbv_end_time
+
+            if num_slot == num_UEs:
+                cycle_time = qbv_end_time 
+
+        schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
+
+        return (schedule_contention, cycle_time)
+    
+    elif schedule_name == "roundrobin then partial contention":
+
+        assert "qbv_window_size" in schedule_config, "Schedule requires 'qbv_window_size' parameter"
+        assert "contention_window_size" in schedule_config, "Schedule requires 'contention_window_size' parameter"
+        assert "contention_UE_indices" in schedule_config, "Schedule requires 'contention_UE_indices' parameter"
+        qbv_window_size = schedule_config["qbv_window_size"]
+        contention_window_size = schedule_config["contention_window_size"]
+        contention_UE_indices = schedule_config["contention_UE_indices"]
+
+        num_UEs = len(UE_names)
+        slots_temp = {}
+        qbv_start_time = start_time
+        num_slot = 0
+
+
+
+        schedule = [[UE_names[i]] for i in range(num_UEs)]
+        schedule.append(UE_names)
+
+        while qbv_start_time < end_time:
+            
+            
+
+            if (num_slot%len(schedule) == num_UEs):
+                qbv_end_time = min(qbv_start_time + contention_window_size, end_time)
+                UEs_temp = [UE_names[i] for i in contention_UE_indices]
+            else:
+                qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
+                UEs_temp = schedule[num_slot%len(schedule)]
+
+            
+
+
+            slots_temp[num_slot] = Slot(num_slot,\
+                                        qbv_start_time,\
+                                        qbv_end_time,
+                                        "contention",
+                                        UEs_temp)
+            num_slot += 1
+
+            qbv_start_time = qbv_end_time
+
+            if num_slot == num_UEs+1:
+                cycle_time = qbv_end_time 
+
+        schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
+
+        return (schedule_contention, cycle_time)
+
+    
+    
+    
     
     
     

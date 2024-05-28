@@ -1,0 +1,57 @@
+{
+    "results_directory_simulation": "../results/simulation_4/10UEs_rr_pc/",
+    "setting_reserved": "setting 0",
+    "setting_contention": "setting 6",
+    "aggregation_limit": 104,
+    "schedule_config": {
+        "qbv_window_size": 1500,
+        "schedule_name": "roundrobin then partial contention",
+        "contention_window_size": 1900,
+        "contention_UE_indices": [
+            4,
+            5,
+            6
+        ]
+    },
+    "num_UEs": 10,
+    "num_packets_per_ue": null,
+    "lambda_range_parameters": [
+        [
+            -4.5,
+            -2.68,
+            20
+        ]
+    ],
+    "num_iterations_contention": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+    ],
+    "num_iterations_arrival": 15,
+    "CWmin": 15,
+    "CWmax": 1023,
+    "start_offset": 10,
+    "duration": 3000000,
+    "percentile_to_plot": 99,
+    "wifi_slot_time": 9,
+    "DIFS": 34,
+    "mode_contention": "Mode 4",
+    "advance_time": 10
+}
