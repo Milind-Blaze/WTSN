@@ -592,3 +592,69 @@ def create_schedule_dynamic(UE_names: list, start_time: float, end_time: float, 
         schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
 
         return (schedule_contention, cycle_time)
+    
+
+    if schedule_name == "dynamic grr":
+        
+
+        schedule_config = config["schedule_config"]
+
+        assert "num_UEs_together" in schedule_config, "Round Robin schedule requires 'num_UEs_together' parameter"
+
+        num_UEs_together = schedule_config["num_UEs_together"]
+
+        if "offset" in schedule_config:
+            offset = schedule_config["offset"]
+            assert offset > 0, "Offset should be greater than 0"
+        else:
+            offset = 1
+
+
+        if "scaling_factor" in schedule_config:
+            scaling_factor = schedule_config["scaling_factor"]
+            assert scaling_factor >= 1, "Scaling factor should be greater than 0"
+        else: 
+            scaling_factor = 1
+
+        num_UEs = len(UE_names)
+        wifi_slot_time = config["wifi_slot_time"] # microseconds
+        DIFS = config["DIFS"] # microseconds
+        CWmin = config["CWmin"]
+        slots_temp = {}
+        qbv_start_time = start_time
+        num_slot = 0
+
+        # computing the qbv_window_size based on the lambda value and delivery latency
+        for delivery_latency_index in range(len(delivery_latency)):
+            delivery_latency_value = delivery_latency[delivery_latency_index]
+            slot_length_temp = DIFS + CWmin*wifi_slot_time + delivery_latency_value
+            if num_UEs*slot_length_temp*lambda_value < delivery_latency_index:
+                qbv_window_size = slot_length_temp
+                break
+            elif delivery_latency_index == len(delivery_latency) - 1:
+                qbv_window_size = slot_length_temp
+
+
+        qbv_window_size = qbv_window_size*scaling_factor
+
+
+
+        while qbv_start_time < end_time:
+            qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
+            UE_names_temp = []
+            for i in range(num_UEs_together):
+                UE_names_temp.append(UE_names[((num_slot + i*offset) % num_UEs)])
+            slots_temp[num_slot] = Slot(num_slot,\
+                                        qbv_start_time,\
+                                        qbv_end_time,
+                                        "contention",
+                                        UE_names_temp)
+            num_slot += 1
+            qbv_start_time = qbv_end_time
+
+            if num_slot == num_UEs:
+                cycle_time = qbv_end_time 
+
+        schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
+
+        return (schedule_contention, cycle_time)
