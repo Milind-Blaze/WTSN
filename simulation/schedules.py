@@ -22,6 +22,20 @@ def create_schedule(UE_names: list, start_time: float, end_time: float, schedule
     assert "schedule_name" in schedule_config, "Schedule name not found in the schedule configuration"
     schedule_name = schedule_config["schedule_name"]
 
+
+    if schedule_name == "CSMA":
+
+        
+        slots_temp = {}
+        num_slot = 0
+        
+        slots_temp[0] = Slot(0, start_time, end_time, "contention", UE_names)
+
+        schedule_contention = Schedule(start_time, end_time, 1, slots_temp)
+        cycle_time = end_time
+
+        return (schedule_contention, cycle_time)
+
     if schedule_name == "roundrobin":
 
         assert "qbv_window_size" in schedule_config, "Round Robin schedule requires 'qbv_window_size' parameter"
@@ -507,6 +521,7 @@ def create_schedule_dynamic(UE_names: list, start_time: float, end_time: float, 
         wifi_slot_time = config["wifi_slot_time"] # microseconds
         DIFS = config["DIFS"] # microseconds
         CWmin = config["CWmin"]
+        CWmax = config["CWmax"]
         slots_temp = {}
         qbv_start_time = start_time
         num_slot = 0
@@ -514,7 +529,7 @@ def create_schedule_dynamic(UE_names: list, start_time: float, end_time: float, 
         # computing the qbv_window_size based on the lambda value and delivery latency
         for delivery_latency_index in range(len(delivery_latency)):
             delivery_latency_value = delivery_latency[delivery_latency_index]
-            slot_length_temp = DIFS + CWmin*wifi_slot_time + delivery_latency_value
+            slot_length_temp = DIFS + CWmax*wifi_slot_time + delivery_latency_value
             if num_UEs*slot_length_temp*lambda_value < delivery_latency_index:
                 qbv_window_size = slot_length_temp
                 break
