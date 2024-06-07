@@ -6,6 +6,8 @@ Author: Milind Kumar Vaddiraju, ChatGPT, CoPilot
 
 import numpy as np
 import random
+import typing
+from typing import List, Tuple, Dict, Optional
 
 from network_classes import *
 
@@ -493,12 +495,6 @@ def create_schedule(UE_names: list, start_time: float, end_time: float, schedule
 
     
     
-    
-    
-    
-    
-    
-
 
 
 def create_schedule_dynamic(UE_names: list, start_time: float, end_time: float, config: dict, \
@@ -521,7 +517,6 @@ def create_schedule_dynamic(UE_names: list, start_time: float, end_time: float, 
         wifi_slot_time = config["wifi_slot_time"] # microseconds
         DIFS = config["DIFS"] # microseconds
         CWmin = config["CWmin"]
-        CWmax = config["CWmax"]
         slots_temp = {}
         qbv_start_time = start_time
         num_slot = 0
@@ -529,7 +524,7 @@ def create_schedule_dynamic(UE_names: list, start_time: float, end_time: float, 
         # computing the qbv_window_size based on the lambda value and delivery latency
         for delivery_latency_index in range(len(delivery_latency)):
             delivery_latency_value = delivery_latency[delivery_latency_index]
-            slot_length_temp = DIFS + CWmax*wifi_slot_time + delivery_latency_value
+            slot_length_temp = DIFS + CWmin*wifi_slot_time + delivery_latency_value
             if num_UEs*slot_length_temp*lambda_value < delivery_latency_index:
                 qbv_window_size = slot_length_temp
                 break
@@ -673,3 +668,93 @@ def create_schedule_dynamic(UE_names: list, start_time: float, end_time: float, 
         schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
 
         return (schedule_contention, cycle_time)
+    
+
+
+
+def create_max_weight_schedule(UE_names: list, start_time: float, end_time: float, config: dict, \
+                            lambda_value: Optional[float], delivery_latency: Optional[list[float]]):
+    
+    assert "schedule_config" in config, "Schedule configuration not found in the configuration"
+    assert "schedule_name" in config["schedule_config"], "Schedule name not found in the schedule \
+        configuration"
+    assert "is_dynamic" in config["schedule_config"], "Dynamic parameter not found in the schedule \
+        configuration"
+    assert "measurement_periodicity" in config["schedule_config"], "Measurement periodicity not \
+        found in the schedule configuration"
+    assert "measurement_window_size" in config["schedule_config"], "Measurement window size not \
+        found in the schedule configuration"
+    
+    schedule_name = config["schedule_config"]["schedule_name"]
+    is_dynamic = config["schedule_config"]["is_dynamic"]
+    measurement_periodicity = config["schedule_config"]["measurement_periodicity"]
+    measurement_window_size = config["schedule_config"]["measurement_window_size"]
+
+
+    num_UEs = len(UE_names)
+    wifi_slot_time = config["wifi_slot_time"] # microseconds
+    DIFS = config["DIFS"] # microseconds
+    CWmin = config["CWmin"]
+    slots_temp = {}
+    qbv_start_time = start_time
+    num_slot = 0
+    num_slot_measurement = 0
+
+    # computing the qbv_window_size based on the lambda value and delivery latency
+    if is_dynamic:
+
+        assert lambda_value is not None, "Lambda value not found in the configuration"
+        assert delivery_latency is not None, "Delivery latency not found in the configuration"
+
+        amortized_measurement_window_size = measurement_window_size/measurement_periodicity
+        for delivery_latency_index in range(len(delivery_latency)):
+            delivery_latency_value = delivery_latency[delivery_latency_index]
+            slot_length_temp = DIFS + CWmin*wifi_slot_time + delivery_latency_value
+            if num_UEs*(slot_length_temp + amortized_measurement_window_size)*lambda_value \
+                < delivery_latency_index:
+                qbv_window_size = slot_length_temp
+                break
+            elif delivery_latency_index == len(delivery_latency) - 1:
+                qbv_window_size = slot_length_temp
+    else:
+        assert "qbv_window_size" in config["schedule_config"], "Schedule requires 'qbv_window_size' parameter"
+        qbv_window_size = config["schedule_config"]["qbv_window_size"]
+
+
+    # Create the first slot with all the UEs
+    slots_temp[num_slot] = Slot(num_slot,\
+                                qbv_start_time,\
+                                qbv_start_time + qbv_window_size,
+                                "contention",
+                                UE_names)
+    num_slot += 1
+    qbv_start_time += qbv_window_size
+
+
+    while qbv_start_time < end_time:
+        if num_slot - num_slot_measurement > measurement_periodicity:
+            num_slot_measurement = num_slot
+            qbv_end_time = min(qbv_start_time + measurement_window_size, end_time)
+            UE_names_temp = []
+            slots_temp[num_slot] = Slot(num_slot,\
+                                        qbv_start_time,\
+                                        qbv_end_time,
+                                        schedule_name,
+                                        UE_names_temp)
+        else:
+            qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
+            UE_names_temp = []
+            slots_temp[num_slot] = Slot(num_slot,\
+                                    qbv_start_time,\
+                                    qbv_end_time,
+                                    "contention",
+                                    UE_names_temp)
+        num_slot += 1
+        qbv_start_time = qbv_end_time
+
+        if num_slot == num_UEs:
+            cycle_time = qbv_end_time 
+
+    schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
+
+    return (schedule_contention, cycle_time)
