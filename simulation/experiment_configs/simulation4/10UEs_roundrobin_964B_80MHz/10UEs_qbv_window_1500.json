@@ -1,0 +1,22 @@
+{
+    "results_directory_simulation": "../results/simulation_4/10UEs_roundrobin_964B_80MHz",
+    "setting_reserved": "setting 0",
+    "setting_contention": "setting 6",
+    "aggregation_limit": 104,
+    "schedule_config": {"qbv_window_size": 1500,
+                        "schedule_name": "roundrobin"},
+    "num_UEs": 10,
+    "num_packets_per_ue": null,
+    "lambda_range_parameters": [[-4.5, -3.25, 10], [-3.2, -2.55, 10]],
+    "num_iterations_contention": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1,1],
+    "num_iterations_arrival": 25,
+    "CWmin": 15,
+    "CWmax": 1023,
+    "start_offset": 10,
+    "duration": 3000000,
+    "percentile_to_plot": 99,
+    "wifi_slot_time": 9,
+    "DIFS": 34,
+    "mode_contention": "Mode 4",
+    "advance_time": 10
+}

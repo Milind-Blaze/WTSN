@@ -1,0 +1,20 @@
+{
+    "results_directory_simulation": "../results/simulation_3/10_UEs_varying_bus_size_mode4",
+    "setting_reserved": "setting 11",
+    "setting_contention": "setting 15",
+    "aggregation_limit": 10,
+    "num_UEs": 10,
+    "num_packets_per_ue": null,
+    "lambda_range_parameters": [[-3.3, -3.09, 6]],
+    "num_iterations_contention": [10, 10, 10, 10, 10, 10],
+    "num_iterations_arrival": 25,
+    "CWmin": 15,
+    "CWmax": 1023,
+    "start_offset": 10,
+    "duration": 1500000,
+    "percentile_to_plot": 99,
+    "wifi_slot_time": 9,
+    "DIFS": 34,
+    "mode_contention": "Mode 4",
+    "advance_time": 10
+}

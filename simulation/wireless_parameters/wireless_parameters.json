@@ -1,0 +1,146 @@
+{
+    "setting 0": {
+        "SNR": 20,
+        "Bandwidth": 20,
+        "MCS": 0,
+        "PER": 0,
+        "payload_size": 64,
+        "aggregation": 1,
+        "delivery_latency": 591.8
+    },
+    "setting 1": {
+        "SNR": 20,
+        "Bandwidth": 20,
+        "MCS": 0,
+        "PER": 0,
+        "payload_size": 964,
+        "aggregation": 1,
+        "delivery_latency": 1470.2
+    },
+    "setting 2": {
+        "SNR": 20,
+        "Bandwidth": 20,
+        "MCS": 0,
+        "PER": 0,
+        "payload_size": 2464,
+        "aggregation": 1,
+        "delivery_latency": 2953.4
+    },
+    "setting 3": {
+        "SNR": 20,
+        "Bandwidth": 20,
+        "MCS": 1,
+        "PER": 0,
+        "payload_size": 64,
+        "aggregation": 1,
+        "delivery_latency": 534.2
+    },
+    "setting 4": {
+        "SNR": 20,
+        "Bandwidth": 20,
+        "MCS": 1,
+        "PER": 0,
+        "payload_size": 964,
+        "aggregation": 1,
+        "delivery_latency": 980.6
+    },
+    "setting 5": {
+        "SNR": 20,
+        "Bandwidth": 20,
+        "MCS": 1,
+        "PER": 0,
+        "payload_size": 2464,
+        "aggregation": 1,
+        "delivery_latency": 1715
+    },
+    "setting 6": {
+        "SNR": 20,
+        "Bandwidth": 20,
+        "MCS": 1,
+        "PER": 0,
+        "payload_size": 64,
+        "aggregation": 1,
+        "delivery_latency": 519.8
+    },
+    "setting 7": {
+        "SNR": 20,
+        "Bandwidth": 20,
+        "MCS": 1,
+        "PER": 0,
+        "payload_size": 964,
+        "aggregation": 1,
+        "delivery_latency": 807.8
+    },
+    "setting 8": {
+        "SNR": 20,
+        "Bandwidth": 20,
+        "MCS": 1,
+        "PER": 0,
+        "payload_size": 2464,
+        "aggregation": 1,
+        "delivery_latency": 1311.8
+    },
+    "setting 9": {
+        "SNR": 20,
+        "Bandwidth": 20,
+        "MCS": 1,
+        "PER": 0,
+        "payload_size": 64,
+        "aggregation": 10,
+        "delivery_latency": 980.6
+    },
+    "setting 10": {
+        "SNR": 35,
+        "Bandwidth": 20,
+        "MCS": 8,
+        "PER": 0.1170412, 
+        "payload_size": 64,
+        "aggregation": 10,
+        "delivery_latency": 563 
+    },
+    "setting 11": {
+        "SNR": 38,
+        "Bandwidth": 20,
+        "MCS": 6,
+        "PER": 0, 
+        "payload_size": 64,
+        "aggregation": 10,
+        "delivery_latency": 591.8 
+    },
+    "setting 12": {
+        "SNR": 38,
+        "Bandwidth": 20,
+        "MCS": 6,
+        "PER": 0, 
+        "payload_size": 64,
+        "aggregation": 1,
+        "delivery_latency": 491
+    },
+    "setting 13": {
+        "SNR": 38,
+        "Bandwidth": 20,
+        "MCS": 6,
+        "PER": 0,
+        "payload_size": 64,
+        "aggregation": 2,
+        "delivery_latency": 505.4
+    },
+    "setting 14": {
+        "SNR": 38,
+        "Bandwidth": 20,
+        "MCS": 6,
+        "PER": 0,
+        "payload_size": 64,
+        "aggregation": 5,
+        "delivery_latency": 534.2
+    },
+    "setting 15": {
+        "SNR": 38,
+        "Bandwidth": 20,
+        "MCS": 6,
+        "PER": 0,
+        "payload_size": 64,
+        "aggregation": 7000,
+        "delivery_latency": [491, 505.4, 519.8, 534.2, 534.2, 548.6, 563, 577.4, 577.4, 591.8]
+    }
+}

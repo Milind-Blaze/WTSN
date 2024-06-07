@@ -1,0 +1,760 @@
+Timer unit: 1e-06 s
+
+Total time: 573.924 s
+File: simulation3_onlyCSMA_single_process.py
+Function: run_simulation_for_lambda at line 37
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    37                                           @profile
+    38                                           def run_simulation_for_lambda(lambda_value, lambda_index, schedule, config, parameters,\
+    39                                                                       UEs_directory):
+    40                                               """
+    41                                               Run the simulation for a given lambda value
+    42                                           
+    43                                               Args:
+    44                                               lambda_value: float, the lambda value to run the simulation for
+    45                                               lambda_index: int, the index of the lambda value in the original lambda_range
+    46                                               config: dict, the configuration for the simulation
+    47                                           
+    48                                               Returns:
+    49                                               results_per_lambda_per_iteration_contention: dict, the results of the simulation
+    50                                               """
+    51                                           
+    52        10         27.0      2.7      0.0      setting_reserved = config["setting_reserved"]
+    53        10         14.0      1.4      0.0      setting_contention = config["setting_contention"]
+    54        20         58.0      2.9      0.0      payload_size = {"reserved": parameters[setting_reserved]["payload_size"]*parameters[setting_reserved]["aggregation"], 
+    55        10          9.0      0.9      0.0                      "contention": parameters[setting_contention]["payload_size"]*parameters[setting_contention]["aggregation"]}
+    56        20         18.0      0.9      0.0      delivery_latency = {"reserved": parameters[setting_reserved]["delivery_latency"],
+    57        10          5.0      0.5      0.0                          "contention": parameters[setting_contention]["delivery_latency"]}
+    58        20         13.0      0.7      0.0      PER = {"reserved":  parameters[setting_reserved]["PER"], 
+    59        10          5.0      0.5      0.0          "contention":  parameters[setting_contention]["PER"]}
+    60                                           
+    61        10          6.0      0.6      0.0      num_UEs = config["num_UEs"]
+    62        10        229.0     22.9      0.0      UE_names = ["UE" + str(i) for i in range(num_UEs)]
+    63        10          8.0      0.8      0.0      num_packets_per_ue = config["num_packets_per_ue"]  # Number of packets per UE for the whole period
+    64        10         15.0      1.5      0.0      packet_sizes = [parameters[setting_reserved]["payload_size"]] # TODO: Both have same packet size, but what if they don't?
+    65        10          5.0      0.5      0.0      priorities = [1]
+    66                                           
+    67        10         22.0      2.2      0.0      UE_arrival = ["Poisson"]*num_UEs
+    68        10          8.0      0.8      0.0      UE_serve_mode = ["Mode 2"]*num_UEs
+    69        10          5.0      0.5      0.0      num_iterations_arrival = config["num_iterations_arrival"]
+    70        10          3.0      0.3      0.0      CWmin = config["CWmin"]
+    71        10          4.0      0.4      0.0      CWmax = config["CWmax"]
+    72                                           
+    73                                               ## Schedule parameters for reserved base schedule
+    74        10          4.0      0.4      0.0      start_offset = config["start_offset"] # microseconds
+    75        10          9.0      0.9      0.0      end_time = config["duration"] + start_offset # microseconds
+    76                                           
+    77                                               # Network properties
+    78                                               # Obtained from the sheet
+    79        10          6.0      0.6      0.0      wifi_slot_time = config["wifi_slot_time"] # microseconds
+    80        10          7.0      0.7      0.0      DIFS = config["DIFS"] # microseconds
+    81                                           
+    82                                           
+    83        10          8.0      0.8      0.0      num_iterations_contention = config["num_iterations_contention"]
+    84        10          6.0      0.6      0.0      mode_contention = config["mode_contention"] 
+    85        10          4.0      0.4      0.0      advance_time = config["advance_time"] # microseconds
+    86        10          4.0      0.4      0.0      debug_mode = config["debug_mode"]
+    87                                           
+    88        10          2.0      0.2      0.0      percentile_to_plot = config["percentile_to_plot"]
+    89                                           
+    90                                           
+    91                                               # Create a schedule, UEs and serve the packets
+    92                                           
+    93        10          2.0      0.2      0.0      schedule_contention = schedule
+    94                                           
+    95        10        628.0     62.8      0.0      print("\n###### Lambda value: " + str(lambda_value), ", Lambda index: " + str(lambda_index), "######")
+    96                                                   
+    97                                                   
+    98        10         19.0      1.9      0.0      results_per_lambda_per_iteration_contention = {}
+    99        10          4.0      0.4      0.0      mean_latencies_across_arrivals = []
+   100        10          6.0      0.6      0.0      percentile_latencies_across_arrivals = []
+   101        10          6.0      0.6      0.0      n_packets_not_served_across_arrivals = []
+   102        10          4.0      0.4      0.0      contention_wins_across_arrivals = []
+   103        10          4.0      0.4      0.0      bus_occupancy_across_arrivals = []
+   104                                           
+   105        20         38.0      1.9      0.0      for num_arrival_iteration in range(num_iterations_arrival):
+   106        10         74.0      7.4      0.0          print("\nArrival iteration: " + str(num_arrival_iteration))
+   107                                                   # Create UEs and packets
+   108                                                   
+   109        10          1.0      0.1      0.0          UEs_contention = {}
+   110                                                       
+   111       110         97.0      0.9      0.0          for i in range(num_UEs): 
+   112                                                       # TODO: Move the UE creation parameters to the cell above?
+   113       200       1176.0      5.9      0.0              UE_temp = UE(i, {1: 0, 2: 1}, UE_arrival[i], UE_serve_mode[i],  num_packets_per_ue, \
+   114       100         30.0      0.3      0.0                          CWmin=CWmin, CWmax=CWmax)
+   115       100        248.0      2.5      0.0              UE_temp.set_poisson_lambda(lambda_value)
+   116       100        559.0      5.6      0.0              UE_temp.initialize_transmission_record(schedule_contention)
+   117       100    5794207.0  57942.1      1.0              UE_temp.generate_packets(schedule_contention, packet_sizes, priorities) # TODO: Change this
+   118       100        519.0      5.2      0.0              UEs_contention[UE_names[i]] = UE_temp
+   119                                           
+   120                                                   # TODO: Check that the delivery times are always in ascending order
+   121                                                   # TODO: check that the arrival times are always in ascending order
+   122                                           
+   123                                                   # TODO: Make this more general i.e handle packet statuses directly instead of opearting under the 
+   124                                                   # restrictions of this simulation
+   125        10        495.0     49.5      0.0          print("Num packets: " + str(UEs_contention["UE0"].n_packets))
+   126                                           
+   127                                           
+   128                                                   # Serve the packets with contention
+   129        10         10.0      1.0      0.0          results_iteration = {}
+   130        10          5.0      0.5      0.0          mean_latencies = []
+   131        10          6.0      0.6      0.0          percentile_latencies = []
+   132        10          4.0      0.4      0.0          n_packets_not_served_array = []
+   133        10          4.0      0.4      0.0          contention_wins = []
+   134        10          4.0      0.4      0.0          bus_occupancy = []
+   135                                                   
+   136                                           
+   137        20         98.0      4.9      0.0          for i in range(num_iterations_contention[lambda_index]):
+   138        10         64.0      6.4      0.0              print("Contention iteration: " + str(i))
+   139        10  113308620.0    1e+07     19.7              UEs_contention_temp = copy.deepcopy(UEs_contention)
+   140                                           
+   141        10        285.0     28.5      0.0              test_network = Network(wifi_slot_time, DIFS, UEs_contention_temp, debug_mode)
+   142        20  444470695.0    2e+07     77.4              test_network.serve_packets(schedule_contention, mode_contention, 
+   143        10          6.0      0.6      0.0                                          payload_size = payload_size,
+   144        10          8.0      0.8      0.0                                          delivery_latency = delivery_latency,
+   145        10          1.0      0.1      0.0                                          PER = PER,
+   146        10          3.0      0.3      0.0                                          advance_time = advance_time)
+   147                                                       
+   148                                                       
+   149        10         19.0      1.9      0.0              latencies = []
+   150        10          3.0      0.3      0.0              bus_occupancy_across_ues = []
+   151        10          4.0      0.4      0.0              contention_wins_across_ues = []
+   152        10         11.0      1.1      0.0              n_packets_not_served = 0
+   153                                           
+   154       110        154.0      1.4      0.0              for ue in UEs_contention_temp:
+   155                                                           # print("UE: ", ue)
+   156       100         89.0      0.9      0.0                  UE_temp = UEs_contention_temp[ue]
+   157       100    1829425.0  18294.2      0.3                  latencies_UE = UE_temp.obtain_packet_latency()
+   158       100     306621.0   3066.2      0.1                  latencies_UE = [latency for latency in latencies_UE if latency is not None]
+   159       100        779.0      7.8      0.0                  n_packets_not_served += UE_temp.n_packets - len(latencies_UE)
+   160       100      12499.0    125.0      0.0                  latencies.extend(latencies_UE)
+   161       100        392.0      3.9      0.0                  contention_wins_across_ues.append(UE_temp.transmission_record[0]["num_wins"])
+   162       100     165475.0   1654.8      0.0                  bus_occupancy_across_ues.append(np.mean(UE_temp.transmission_record[0]["num_transmissions"]))
+   163                                                       
+   164        10     124242.0  12424.2      0.0              mean_latencies.append(np.mean(latencies))
+   165        10      97759.0   9775.9      0.0              percentile_latencies.append(compute_percentile(latencies, percentile_to_plot))
+   166        10         12.0      1.2      0.0              n_packets_not_served_array.append(n_packets_not_served)
+   167        10        647.0     64.7      0.0              contention_wins.append(np.mean(contention_wins_across_ues))
+   168        10        337.0     33.7      0.0              bus_occupancy.append(np.mean(bus_occupancy_across_ues))
+   169                                           
+   170        10        343.0     34.3      0.0              print("Save UEs_contetion_temp")
+   171                                                       # results_iteration[i] = UEs_contention_temp
+   172        70        503.0      7.2      0.0              UEs_filename = os.path.join(UEs_directory, "UEs_contention_" + \
+   173        40         39.0      1.0      0.0                                          str(lambda_index) + "_" + str(num_arrival_iteration) + "_" + \
+   174        20          9.0      0.5      0.0                                          str(i) + ".pkl")
+   175        20      11778.0    588.9      0.0              with open(UEs_filename, "wb") as file:
+   176        10    7787238.0 778723.8      1.4                  pickle.dump(UEs_contention_temp, file)
+   177                                           
+   178        10         87.0      8.7      0.0              results_iteration[i] = UEs_contention_temp 
+   179                                                   # for key in results_iteration:
+   180                                                   #     print("results_iteration " + str(key), results_iteration[key])
+   181                                           
+   182                                                   # TODO: Scale to multiple UEs, currently you're extracting the results only for one UE,
+   183                                                   # but you should be extracting the results for all UEs
+   184        10       1832.0    183.2      0.0          mean_latencies_across_arrivals.append(np.mean(mean_latencies))
+   185        10        355.0     35.5      0.0          percentile_latencies_across_arrivals.append(np.mean(percentile_latencies))
+   186        10        366.0     36.6      0.0          n_packets_not_served_across_arrivals.append(np.mean(n_packets_not_served_array))
+   187        10        274.0     27.4      0.0          contention_wins_across_arrivals.append(np.mean(contention_wins))
+   188        10        270.0     27.0      0.0          bus_occupancy_across_arrivals.append(np.mean(bus_occupancy))
+   189                                           
+   190                                           
+   191        10         16.0      1.6      0.0          results_per_lambda_per_iteration_contention[num_arrival_iteration] = results_iteration
+   192                                               
+   193        10          4.0      0.4      0.0      result_temp = {}        
+   194        10        266.0     26.6      0.0      result_temp["mean_latency"] = np.mean(mean_latencies_across_arrivals)
+   195        10       1176.0    117.6      0.0      result_temp["mean_latency_std"] = np.std(mean_latencies_across_arrivals)
+   196        10        280.0     28.0      0.0      result_temp["percentile_latency"] = np.mean(percentile_latencies_across_arrivals)
+   197        10        546.0     54.6      0.0      result_temp["percentile_latency_std"] = np.std(percentile_latencies_across_arrivals)
+   198        10        255.0     25.5      0.0      result_temp["n_packets_not_served"] = np.mean(n_packets_not_served_across_arrivals)
+   199        10        524.0     52.4      0.0      result_temp["n_packets_not_served_std"] = np.std(n_packets_not_served_across_arrivals)
+   200        10        253.0     25.3      0.0      result_temp["contention_wins"] = np.mean(contention_wins_across_arrivals)
+   201        10        245.0     24.5      0.0      result_temp["bus_occupancy"] = np.mean(bus_occupancy_across_arrivals)
+   202                                           
+   203        10          5.0      0.5      0.0      return result_temp
+
+Total time: 578.317 s
+File: simulation3_onlyCSMA_single_process.py
+Function: main at line 206
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   206                                           @profile
+   207                                           def main():
+   208                                           
+   209         1        770.0    770.0      0.0      parser = argparse.ArgumentParser()
+   210         1         69.0     69.0      0.0      parser.add_argument("parameters_filename", help = "file containing the wireless parameters")
+   211         1         47.0     47.0      0.0      parser.add_argument("config_filename", help = "file containing the experiment configuration")
+   212         1         60.0     60.0      0.0      parser.add_argument("--show_plots", default = False, help = "enable debug mode", action="store_true")
+   213         1        471.0    471.0      0.0      args = parser.parse_args()
+   214                                           
+   215                                               # In[2]:
+   216                                           
+   217                                           
+   218                                               # Parameters affecting how a packet is served: essentially MCS and latency from the Excel sheet
+   219                                               # TODO: integrate MCS usage into the UE instead of having it outside
+   220                                               # TODO: Create a simple CSV file of this
+   221                                           
+   222                                           
+   223                                           
+   224                                               # TODO: Remove the 67us from this that contains backoff 
+   225         1          1.0      1.0      0.0      parameters_filename = args.parameters_filename
+   226         2         73.0     36.5      0.0      with open(parameters_filename, 'r') as f:
+   227         1        373.0    373.0      0.0          parameters = json.load(f)
+   228                                           
+   229                                           
+   230                                           
+   231                                           
+   232                                           
+   233                                               # # In[27]:
+   234                                           
+   235                                           
+   236                                               # # Set the simulation parameters
+   237                                           
+   238                                               # results_directory_simulation = "./results/simulation_3/"
+   239                                               # config_file = "No config file"
+   240                                           
+   241                                               # setting_reserved = "setting 12"
+   242                                               # setting_contention = "setting 12"
+   243                                               # payload_size = {"reserved": parameters[setting_reserved]["payload_size"]*parameters[setting_reserved]["aggregation"], 
+   244                                               #                 "contention": parameters[setting_contention]["payload_size"]*parameters[setting_contention]["aggregation"]}
+   245                                               # delivery_latency = {"reserved": parameters[setting_reserved]["delivery_latency"],
+   246                                               #                     "contention": parameters[setting_contention]["delivery_latency"]}
+   247                                               # PER = {"reserved":  parameters[setting_reserved]["PER"], 
+   248                                               #        "contention":  parameters[setting_contention]["PER"]}
+   249                                           
+   250                                           
+   251                                           
+   252                                           
+   253                                               # num_UEs = 3
+   254                                               # UE_names = ["UE" + str(i) for i in range(num_UEs)]
+   255                                               # num_packets_per_ue = None  # Number of packets per UE for the whole period
+   256                                               # packet_sizes = [parameters[setting_reserved]["payload_size"]] # TODO: Both have same packet size, but what if they don't?
+   257                                               # priorities = [1]
+   258                                               # # lambda_range = np.logspace(-4.5, -3, 20)
+   259                                               # # lambda_range = np.concatenate((np.logspace(-4.5, -3, 10), np.logspace(-3, -2.2, 5)))
+   260                                               # # For 10 UEs
+   261                                               # # lambda_range = np.logspace(-4.5, -3.765, 15)
+   262                                               # # For 3 UEs
+   263                                               # # lambda_range = np.logspace(-4.5, -3.26, 15)
+   264                                               # lambda_range = np.concatenate((np.logspace(-4.5, -3.43, 8), np.logspace(-3.34, -3.26, 7)))
+   265                                               # # lambda_range = [10**(-4.5)]
+   266                                               # lambda_original = copy.deepcopy(lambda_range)
+   267                                               # UE_arrival = ["Poisson"]*num_UEs
+   268                                               # UE_serve_mode = ["Mode 2"]*num_UEs
+   269                                               # num_iterations_arrival = 20
+   270                                               # CWmin = 15
+   271                                               # CWmax = 1023
+   272                                           
+   273                                           
+   274                                               # ## Schedule parameters for reserved base schedule
+   275                                               # start_offset = 10 # microseconds
+   276                                               # end_time = 1.5*10**6 + start_offset # microseconds
+   277                                           
+   278                                           
+   279                                               # # Network properties
+   280                                               # # Obtained from the sheet
+   281                                               # wifi_slot_time = 9 # microseconds
+   282                                               # DIFS = 34 # microseconds
+   283                                           
+   284                                           
+   285                                           
+   286                                               # # Plot information
+   287                                               # percentile_to_plot = 99
+   288                                               # num_iterations_contention = [2]*8 + [10]*7
+   289                                               # mode_contention = "Mode 3" 
+   290                                               # advance_time = 10 # microseconds
+   291                                               # debug_mode = False
+   292                                           
+   293                                           
+   294                                           
+   295                                               # assert len(num_iterations_contention) == len(lambda_range), "Lengths not equal"
+   296                                           
+   297                                           
+   298                                               # In[9]:
+   299                                           
+   300                                           
+   301         1          1.0      1.0      0.0      config_file = args.config_filename
+   302         2         47.0     23.5      0.0      with open(config_file, 'r') as f:
+   303         1        246.0    246.0      0.0          config = json.load(f)
+   304                                           
+   305                                               # Set the simulation parameters
+   306                                           
+   307         1          1.0      1.0      0.0      results_directory_simulation = config["results_directory_simulation"]
+   308                                           
+   309         1          0.0      0.0      0.0      setting_reserved = config["setting_reserved"]
+   310         1          0.0      0.0      0.0      setting_contention = config["setting_contention"]
+   311         2          2.0      1.0      0.0      payload_size = {"reserved": parameters[setting_reserved]["payload_size"]*parameters[setting_reserved]["aggregation"], 
+   312         1          0.0      0.0      0.0                      "contention": parameters[setting_contention]["payload_size"]*parameters[setting_contention]["aggregation"]}
+   313         2          1.0      0.5      0.0      delivery_latency = {"reserved": parameters[setting_reserved]["delivery_latency"],
+   314         1          1.0      1.0      0.0                          "contention": parameters[setting_contention]["delivery_latency"]}
+   315         2          0.0      0.0      0.0      PER = {"reserved":  parameters[setting_reserved]["PER"], 
+   316         1          1.0      1.0      0.0          "contention":  parameters[setting_contention]["PER"]}
+   317                                           
+   318                                           
+   319         1          1.0      1.0      0.0      num_UEs = config["num_UEs"]
+   320         1          9.0      9.0      0.0      UE_names = ["UE" + str(i) for i in range(num_UEs)]
+   321         1          1.0      1.0      0.0      num_packets_per_ue = config["num_packets_per_ue"]  # Number of packets per UE for the whole period
+   322         1          1.0      1.0      0.0      packet_sizes = [parameters[setting_reserved]["payload_size"]] # TODO: Both have same packet size, but what if they don't?
+   323         1          1.0      1.0      0.0      priorities = [1]
+   324                                           
+   325                                               
+   326         1         10.0     10.0      0.0      lambda_range = np.array([])
+   327         2          2.0      1.0      0.0      for lambda_range_parameter in config["lambda_range_parameters"]:
+   328         1          1.0      1.0      0.0          lambda_range_low = lambda_range_parameter[0]
+   329         1          0.0      0.0      0.0          lambda_range_high = lambda_range_parameter[1]
+   330         1          1.0      1.0      0.0          num_lambda_values = lambda_range_parameter[2]
+   331         2         12.0      6.0      0.0          lambda_range = np.concatenate((lambda_range, \
+   332         1        173.0    173.0      0.0                                      np.logspace(lambda_range_low, lambda_range_high, num_lambda_values)))
+   333                                           
+   334                                           
+   335         1         16.0     16.0      0.0      lambda_original = copy.deepcopy(lambda_range)
+   336         1          1.0      1.0      0.0      UE_arrival = ["Poisson"]*num_UEs
+   337         1          1.0      1.0      0.0      UE_serve_mode = ["Mode 2"]*num_UEs
+   338         1          1.0      1.0      0.0      num_iterations_arrival = config["num_iterations_arrival"]
+   339         1          0.0      0.0      0.0      CWmin = config["CWmin"]
+   340         1          0.0      0.0      0.0      CWmax = config["CWmax"]
+   341                                           
+   342                                           
+   343                                               ## Schedule parameters for reserved base schedule
+   344         1          0.0      0.0      0.0      start_offset = config["start_offset"] # microseconds
+   345         1          0.0      0.0      0.0      end_time = config["duration"] + start_offset # microseconds
+   346                                           
+   347                                           
+   348                                               # Network properties
+   349                                               # Obtained from the sheet
+   350         1          0.0      0.0      0.0      wifi_slot_time = config["wifi_slot_time"] # microseconds
+   351         1          0.0      0.0      0.0      DIFS = config["DIFS"] # microseconds
+   352                                           
+   353                                           
+   354                                           
+   355                                               # Plot information
+   356         1          0.0      0.0      0.0      percentile_to_plot = config["percentile_to_plot"]
+   357         1          0.0      0.0      0.0      num_iterations_contention = config["num_iterations_contention"]
+   358         1          0.0      0.0      0.0      mode_contention = config["mode_contention"] 
+   359         1          0.0      0.0      0.0      advance_time = config["advance_time"] # microseconds
+   360         1          0.0      0.0      0.0      debug_mode = False
+   361         1          0.0      0.0      0.0      config["debug_mode"] = debug_mode
+   362                                           
+   363                                           
+   364         1          1.0      1.0      0.0      assert len(num_iterations_contention) == len(lambda_range), "Lengths not equal"
+   365                                               # In[22]:
+   366                                           
+   367                                           
+   368                                               # Create a schedule, UEs and serve the packets
+   369                                           
+   370         1          1.0      1.0      0.0      slots_temp = {}
+   371         1          5.0      5.0      0.0      slots_temp[0] = Slot(0, start_offset, end_time, "contention", UE_names)
+   372         1          3.0      3.0      0.0      schedule_contention = Schedule(start_offset, end_time, 1, slots_temp)
+   373                                           
+   374                                           
+   375                                               # print(schedule_reserved)
+   376         1         53.0     53.0      0.0      print(schedule_contention)
+   377                                           
+   378         1          1.0      1.0      0.0      results_per_lambda_contention = {}
+   379                                           
+   380         1          0.0      0.0      0.0      count = 0
+   381                                           
+   382         1          2.0      2.0      0.0      execution_start_time = time.time()
+   383                                           
+   384         1          5.0      5.0      0.0      profiler = cProfile.Profile()
+   385         1          8.0      8.0      0.0      profiler.enable()
+   386                                           
+   387                                               # Create a results directory folder using results_directory_simulation and the current time
+   388         1         73.0     73.0      0.0      experiment_folder_name = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+   389         1         17.0     17.0      0.0      results_directory_experiment = os.path.join(results_directory_simulation, experiment_folder_name)
+   390         1        509.0    509.0      0.0      os.makedirs(results_directory_experiment, exist_ok=True)
+   391         1          8.0      8.0      0.0      UEs_directory = os.path.join(results_directory_experiment, "UEs")
+   392         1         79.0     79.0      0.0      os.makedirs(UEs_directory, exist_ok=True)
+   393                                           
+   394                                               # with Pool() as pool:
+   395                                               #     results_parallel = pool.starmap(run_simulation_for_lambda, \
+   396                                               #                            [(lambda_range[i], i, schedule_contention, config, parameters) \
+   397                                               #                             for i in range(len(lambda_range))])
+   398                                               
+   399         1          0.0      0.0      0.0      results_parallel = {}
+   400        11         24.0      2.2      0.0      for i in range(len(lambda_range)):
+   401        20  576409646.0    3e+07     99.7          results_parallel[i] = run_simulation_for_lambda(lambda_range[i], i, schedule_contention, config, parameters, \
+   402        10          5.0      0.5      0.0                                                          UEs_directory)
+   403                                                   
+   404                                           
+   405                                               # for i in range(len(lambda_range)):
+   406                                               #     results_per_lambda_contention[lambda_range[i]] = results_parallel[i]
+   407                                           
+   408         1          1.0      1.0      0.0      results_allUEs_per_lambda_contention = {}
+   409        11         15.0      1.4      0.0      for i in range(len(lambda_range)):
+   410        10         17.0      1.7      0.0          results_allUEs_per_lambda_contention[lambda_range[i]] = results_parallel[i]
+   411                                                   
+   412                                           
+   413         1         22.0     22.0      0.0      execution_finish_time = time.time()
+   414         1          1.0      1.0      0.0      execution_duration = execution_finish_time - execution_start_time
+   415                                           
+   416                                           
+   417                                               # In[23]:
+   418                                           
+   419                                           
+   420                                               
+   421                                               # Plots: CDF of latencies, percentile latency vs lambda, mean latency vs lambda,
+   422                                               # number of packets not served vs lambda
+   423                                           
+   424                                           
+   425                                               # In[24]:
+   426                                           
+   427                                           
+   428                                               # results_allUEs_per_lambda_contention = {}
+   429                                               # for lambda_value in results_per_lambda_contention:
+   430                                               #     print("\n\nlambda value: ", lambda_value)
+   431                                           
+   432                                               #     mean_latencies_across_arrivals = []
+   433                                               #     percentile_latencies_across_arrivals = []
+   434                                               #     n_packets_not_served_across_arrivals = []
+   435                                               #     contention_wins_across_arrivals = []
+   436                                               #     bus_occupancy_across_arrivals = []
+   437                                           
+   438                                               #     for num_iteration_arrival in results_per_lambda_contention[lambda_value]:
+   439                                               #         mean_latencies = []
+   440                                               #         percentile_latencies = []
+   441                                               #         n_packets_not_served_array = []
+   442                                               #         contention_wins = []
+   443                                               #         bus_occupancy = []
+   444                                               #         print("arrival iteration " + str(num_iteration_arrival))
+   445                                               #         for iteration in results_per_lambda_contention[lambda_value][num_iteration_arrival]:
+   446                                               #             latencies = []
+   447                                               #             bus_occupancy_across_ues = []
+   448                                               #             contention_wins_across_ues = []
+   449                                               #             n_packets_not_served = 0
+   450                                               #             # print("iteration", iteration)
+   451                                               #             for ue in results_per_lambda_contention[lambda_value][num_iteration_arrival][iteration]:
+   452                                               #                 # print("UE: ", ue)
+   453                                               #                 UE_temp = results_per_lambda_contention[lambda_value][num_iteration_arrival][iteration][ue]
+   454                                               #                 latencies_UE = UE_temp.obtain_packet_latency()
+   455                                               #                 latencies_UE = [latency for latency in latencies_UE if latency is not None]
+   456                                               #                 n_packets_not_served += UE_temp.n_packets - len(latencies_UE)
+   457                                               #                 latencies.extend(latencies_UE)
+   458                                               #                 contention_wins_across_ues.append(UE_temp.transmission_record[0]["num_wins"])
+   459                                               #                 bus_occupancy_across_ues.append(np.mean(UE_temp.transmission_record[0]["num_transmissions"]))
+   460                                           
+   461                                           
+   462                                               #             print("iteration", iteration)    
+   463                                               #             mean_latencies.append(np.mean(latencies))
+   464                                               #             percentile_latencies.append(compute_percentile(latencies, percentile_to_plot))
+   465                                               #             n_packets_not_served_array.append(n_packets_not_served)
+   466                                               #             contention_wins.append(np.mean(contention_wins_across_ues))
+   467                                               #             bus_occupancy.append(np.mean(bus_occupancy_across_ues))
+   468                                           
+   469                                               #         print("Len(mean_latencies)", len(mean_latencies))
+   470                                               #         mean_latencies_across_arrivals.append(np.mean(mean_latencies))
+   471                                               #         percentile_latencies_across_arrivals.append(np.mean(percentile_latencies))
+   472                                               #         n_packets_not_served_across_arrivals.append(np.mean(n_packets_not_served_array))
+   473                                               #         contention_wins_across_arrivals.append(np.mean(contention_wins))
+   474                                               #         bus_occupancy_across_arrivals.append(np.mean(bus_occupancy))
+   475                                           
+   476                                               #     result_temp = {}        
+   477                                               #     result_temp["mean_latency"] = np.mean(mean_latencies_across_arrivals)
+   478                                               #     result_temp["mean_latency_std"] = np.std(mean_latencies_across_arrivals)
+   479                                               #     result_temp["percentile_latency"] = np.mean(percentile_latencies_across_arrivals)
+   480                                               #     result_temp["percentile_latency_std"] = np.std(percentile_latencies_across_arrivals)
+   481                                               #     result_temp["n_packets_not_served"] = np.mean(n_packets_not_served_across_arrivals)
+   482                                               #     result_temp["n_packets_not_served_std"] = np.std(n_packets_not_served_across_arrivals)
+   483                                               #     result_temp["contention_wins"] = np.mean(contention_wins_across_arrivals)
+   484                                               #     result_temp["bus_occupancy"] = np.mean(bus_occupancy_across_arrivals)
+   485                                               #     results_allUEs_per_lambda_contention[lambda_value] = result_temp
+   486                                           
+   487                                           
+   488                                               # In[25]:
+   489                                           
+   490                                           
+   491                                               # Save the parameters and the results of the experiment to a file
+   492                                           
+   493        19         89.0      4.7      0.0      experiment_parameters = {
+   494         1          9.0      9.0      0.0          "config_file": config_file,
+   495         1          1.0      1.0      0.0          "setting_reserved": parameters[setting_reserved],
+   496         1          0.0      0.0      0.0          "setting_contention": parameters[setting_contention],
+   497         1          1.0      1.0      0.0          "num_UEs": num_UEs,
+   498         1          1.0      1.0      0.0          "num_packets_per_ue": num_packets_per_ue,
+   499         1          1.0      1.0      0.0          "packet_sizes": packet_sizes,
+   500         1          0.0      0.0      0.0          "priorities": priorities,
+   501         1          0.0      0.0      0.0          "UE_arrival": UE_arrival,
+   502         1          0.0      0.0      0.0          "UE_serve_mode": UE_serve_mode,
+   503         1          0.0      0.0      0.0          "start_offset": start_offset, # microseconds
+   504         1          0.0      0.0      0.0          "end_time": end_time,
+   505         1          0.0      0.0      0.0          "percentile_to_plot": percentile_to_plot,
+   506         1          1.0      1.0      0.0          "wifi_slot_time": wifi_slot_time,
+   507         1          0.0      0.0      0.0          "DIFS": DIFS,
+   508         1          1.0      1.0      0.0          "num_iterations_contention": num_iterations_contention,
+   509         1          0.0      0.0      0.0          "num_iterations_arrival": num_iterations_arrival,
+   510         1          0.0      0.0      0.0          "contention_mode": mode_contention,
+   511         1          1.0      1.0      0.0          "advance_time": advance_time,
+   512         1          1.0      1.0      0.0          "CWmin": CWmin,
+   513         1          0.0      0.0      0.0          "CWmax": CWmax,
+   514         1          0.0      0.0      0.0          "lambda_range": lambda_range,
+   515         1          0.0      0.0      0.0          "execution_duration": execution_duration,
+   516         1          1.0      1.0      0.0          "config": config,
+   517                                               }
+   518                                           
+   519                                               # Write experiment_parameters_json to a json file with filename experiment_parameters.json
+   520                                           
+   521         1       1163.0   1163.0      0.0      experiment_parameters_json = json.dumps(experiment_parameters, indent=4, cls=NumpyEncoder)
+   522         2         21.0     10.5      0.0      experiment_parameters_json_filename = os.path.join(results_directory_experiment, \
+   523         1          0.0      0.0      0.0                                                      "experiment_parameters.json")
+   524         2        473.0    236.5      0.0      with open(experiment_parameters_json_filename, "w") as file:
+   525         1          6.0      6.0      0.0          file.write(experiment_parameters_json)
+   526                                           
+   527                                           
+   528         1          2.0      2.0      0.0      experiment_parameters_pickle = {
+   529         1          0.0      0.0      0.0          "schedule_contention": schedule_contention,
+   530         1          0.0      0.0      0.0          "results_per_lambda_contention": results_per_lambda_contention,
+   531         1          0.0      0.0      0.0          "results_allUEs_per_lambda_contention": results_allUEs_per_lambda_contention,
+   532         1          0.0      0.0      0.0          "experiment_parameters": experiment_parameters
+   533                                               }
+   534                                           
+   535         2         13.0      6.5      0.0      experiment_parameters_pickle_filename = os.path.join(results_directory_experiment, \
+   536         1          0.0      0.0      0.0                                                          "experiment_parameters.pkl")
+   537                                           
+   538         2        169.0     84.5      0.0      with open(experiment_parameters_pickle_filename, "wb") as file:
+   539         1        746.0    746.0      0.0          pickle.dump(experiment_parameters_pickle, file)
+   540                                           
+   541                                           
+   542                                               # In[26]:
+   543                                           
+   544                                           
+   545         1          1.0      1.0      0.0      lambda_range = lambda_original
+   546                                           
+   547                                               # lambda_range = lambda_range[:8]
+   548                                           
+   549         1          0.0      0.0      0.0      scale = "linear"
+   550         1          2.0      2.0      0.0      percentile_filename = "percentile_latency_allUEs_all_" + scale + ".png"
+   551         1          1.0      1.0      0.0      percentile_slope_filename = "percentile_slope_allUEs_all_" + scale + ".png"
+   552         1          1.0      1.0      0.0      mean_filename = "mean_latency_allUEs_all_" + scale + ".png"
+   553         1          0.0      0.0      0.0      mean_slope_filename = "mean_slope_allUEs_all_" + scale + ".png"
+   554         1          0.0      0.0      0.0      n_packets_not_served_filename = "n_packets_not_served_allUEs_all_" + scale + ".png"
+   555         1          3.0      3.0      0.0      scaling_factor = 10**6
+   556                                           
+   557                                               # Plot the percentile curve
+   558                                           
+   559         1     236364.0 236364.0      0.0      plt.figure(figsize=(10, 8))
+   560                                               # percentiles = []
+   561                                               # for lambda_value in lambda_range:
+   562                                               #     percentiles.append(results_allUEs_per_lambda_reserved[lambda_value]["percentile_latency"])
+   563                                               # plt.plot(np.array(lambda_range)*(schedule_reserved.end_time - schedule_reserved.start_time), \
+   564                                               #          percentiles, ".-", label = "reserved")
+   565                                           
+   566         1          1.0      1.0      0.0      percentiles_contention = []
+   567         1          1.0      1.0      0.0      percentiles_contention_std = []
+   568        11         18.0      1.6      0.0      for lambda_value in lambda_range:
+   569        10         20.0      2.0      0.0          percentiles_contention.append(results_allUEs_per_lambda_contention[lambda_value]["percentile_latency"])
+   570        20         14.0      0.7      0.0          percentiles_contention_std.append(\
+   571        10          8.0      0.8      0.0              results_allUEs_per_lambda_contention[lambda_value]["percentile_latency_std"])
+   572         2      79251.0  39625.5      0.0      plt.errorbar(np.array(lambda_range)*scaling_factor, \
+   573         1          1.0      1.0      0.0              percentiles_contention, percentiles_contention_std, label = "contention", fmt='.-', \
+   574         1          0.0      0.0      0.0              capsize=3)
+   575                                               # plt.plot(n_packets_generated, percentiles)
+   576         1        178.0    178.0      0.0      plt.xlabel("lambda*schedule_duration (us)")
+   577         1        134.0    134.0      0.0      plt.ylabel(str(percentile_to_plot) + "percentile latency (us)")
+   578         1       6833.0   6833.0      0.0      plt.legend()
+   579                                           
+   580         1          1.0      1.0      0.0      if scale == "log":
+   581                                                       plt.yscale('log')
+   582                                           
+   583         5         26.0      5.2      0.0      title = (f"Simulation 3 {percentile_to_plot} percentile latency vs lambda, \n PER = {PER},\n"
+   584         1          0.0      0.0      0.0              f"num_UEs: {num_UEs}, \n"
+   585         1          0.0      0.0      0.0              f"allowed_payload: {payload_size} B, \n "
+   586         1          0.0      0.0      0.0              f"packet size: {packet_sizes[0]} B, \n"
+   587         1          1.0      1.0      0.0              f"delivery_latency: {delivery_latency} us ,\n"
+   588                                                       )
+   589         1        513.0    513.0      0.0      plt.title(title)
+   590                                               # Insert a textbox at the lowest y value of the plot and have y axis be the label
+   591         2        684.0    342.0      0.0      plt.text(0, percentiles_contention[0], str(np.round(percentiles_contention[0],2)), \
+   592         1          0.0      0.0      0.0              fontsize=12, verticalalignment='bottom')
+   593         1     157664.0 157664.0      0.0      plt.tight_layout()
+   594                                           
+   595                                           
+   596         1     270933.0 270933.0      0.0      plt.savefig(os.path.join(results_directory_experiment, percentile_filename))
+   597         1         26.0     26.0      0.0      if args.show_plots:
+   598                                                   plt.show()
+   599                                           
+   600                                           
+   601         1         83.0     83.0      0.0      slope = np.diff(percentiles_contention)/(np.diff(lambda_range)*(schedule_contention.end_time - schedule_contention.start_time))
+   602         1        644.0    644.0      0.0      plt.title("Percentile latency slope")
+   603         1        144.0    144.0      0.0      plt.xlabel("lambda*schedule_duration (us)")
+   604         1        130.0    130.0      0.0      plt.ylabel(str(percentile_to_plot) + "percentile latency slope (us)")
+   605         1          0.0      0.0      0.0      if scale == "log":
+   606                                                       plt.yscale('log')
+   607                                                       plt.ylim(10**-2, 10**2)
+   608         1       1840.0   1840.0      0.0      plt.plot(np.array(lambda_range[1:])*scaling_factor, slope, ".-")
+   609         1     155403.0 155403.0      0.0      plt.savefig(os.path.join(results_directory_experiment, percentile_slope_filename))
+   610         1          1.0      1.0      0.0      if args.show_plots:
+   611                                                   plt.show()
+   612                                           
+   613         1        675.0    675.0      0.0      print(slope)
+   614                                               # Plot the mean latency curve
+   615                                           
+   616         1      21761.0  21761.0      0.0      plt.figure(figsize=(10, 8))
+   617                                               # mean_latencies = []
+   618                                               # for lambda_value in lambda_range:
+   619                                               #     mean_latencies.append(results_allUEs_per_lambda_reserved[lambda_value]["mean_latency"])
+   620                                               # plt.plot(np.array(lambda_range)*(schedule_reserved.end_time - schedule_reserved.start_time),\
+   621                                               #          mean_latencies, ".-", label = "reserved")
+   622                                           
+   623                                           
+   624                                           
+   625         1          0.0      0.0      0.0      mean_latencies_contention = []
+   626         1          1.0      1.0      0.0      mean_latencies_contention_std = []
+   627        11         22.0      2.0      0.0      for lambda_value in lambda_range:
+   628        10         20.0      2.0      0.0          mean_latencies_contention.append(results_allUEs_per_lambda_contention[lambda_value]["mean_latency"])
+   629        20         14.0      0.7      0.0          mean_latencies_contention_std.append(\
+   630        10          8.0      0.8      0.0              results_allUEs_per_lambda_contention[lambda_value]["mean_latency_std"])
+   631         2      43871.0  21935.5      0.0      plt.errorbar(np.array(lambda_range)*scaling_factor,\
+   632         1          1.0      1.0      0.0              mean_latencies_contention, mean_latencies_contention_std, label = "contention", fmt='.-', \
+   633         1          0.0      0.0      0.0              capsize=3)
+   634                                           
+   635         2        680.0    340.0      0.0      plt.text(0, mean_latencies_contention[0], str(np.round(mean_latencies_contention[0],2)), \
+   636         1          1.0      1.0      0.0              fontsize=12, verticalalignment='bottom')
+   637                                           
+   638         1       6623.0   6623.0      0.0      plt.legend()
+   639                                           
+   640         1        154.0    154.0      0.0      plt.xlabel("lambda*schedule_duration")
+   641         1        120.0    120.0      0.0      plt.ylabel("Mean latency (us)")
+   642                                           
+   643         1          0.0      0.0      0.0      if scale == "log":
+   644                                                       plt.yscale('log')
+   645                                           
+   646         5         21.0      4.2      0.0      title = (f"Simulation 3 mean latency vs lambda, \n PER = {PER}, \n"
+   647         1          0.0      0.0      0.0              f"num_UEs: {num_UEs}, \n"
+   648         1          1.0      1.0      0.0              f"allowed_payload: {payload_size} B, \n "
+   649         1          1.0      1.0      0.0              f"packet size: {packet_sizes[0]} B, \n"
+   650         1          1.0      1.0      0.0              f"delivery_latency: {delivery_latency} us ,\n"
+   651                                                       )
+   652         1        645.0    645.0      0.0      plt.title(title)
+   653         1     138911.0 138911.0      0.0      plt.tight_layout()
+   654                                           
+   655         1     160887.0 160887.0      0.0      plt.savefig(os.path.join(results_directory_experiment, mean_filename))
+   656                                           
+   657         1          1.0      1.0      0.0      if args.show_plots:
+   658                                                   plt.show()
+   659                                           
+   660                                           
+   661         1         81.0     81.0      0.0      slope = np.diff(mean_latencies_contention)/(np.diff(lambda_range)*(schedule_contention.end_time - schedule_contention.start_time))
+   662         1        706.0    706.0      0.0      plt.title("Mean latency slope")
+   663         1        184.0    184.0      0.0      plt.xlabel("lambda*schedule_duration (us)")
+   664         1        137.0    137.0      0.0      plt.ylabel("Mean percentile latency slope (us)")
+   665         1          1.0      1.0      0.0      if scale == "log":
+   666                                                       plt.yscale('log')
+   667         1       1564.0   1564.0      0.0      plt.plot(np.array(lambda_range[1:])*(schedule_contention.end_time - schedule_contention.start_time), slope, ".-")
+   668         1     125236.0 125236.0      0.0      plt.savefig(os.path.join(results_directory_experiment, mean_slope_filename))
+   669         1          1.0      1.0      0.0      if args.show_plots:
+   670                                                   plt.show()
+   671                                           
+   672         1      16147.0  16147.0      0.0      plt.figure(figsize=(10, 8))
+   673                                               # mean_latencies = []
+   674                                               # for lambda_value in lambda_range:
+   675                                               #     mean_latencies.append(results_allUEs_per_lambda_reserved[lambda_value]["mean_latency"])
+   676                                               # plt.plot(np.array(lambda_range)*(schedule_reserved.end_time - schedule_reserved.start_time),\
+   677                                               #          mean_latencies, ".-", label = "reserved")
+   678                                           
+   679                                               # scale = "linear"
+   680                                           
+   681                                           
+   682         1          0.0      0.0      0.0      unserved_packets_contention = []
+   683         1          0.0      0.0      0.0      unserved_packets_contention_std = []
+   684        11         17.0      1.5      0.0      for lambda_value in lambda_range:
+   685        10         22.0      2.2      0.0          unserved_packets_contention.append(results_allUEs_per_lambda_contention[lambda_value]["n_packets_not_served"])
+   686        20         13.0      0.7      0.0          unserved_packets_contention_std.append(\
+   687        10          6.0      0.6      0.0              results_allUEs_per_lambda_contention[lambda_value]["n_packets_not_served_std"])
+   688         2      37344.0  18672.0      0.0      plt.errorbar(np.array(lambda_range)*(schedule_contention.end_time - schedule_contention.start_time),\
+   689         1         18.0     18.0      0.0              np.array(unserved_packets_contention) + 1, np.array(unserved_packets_contention_std) + 0.001, label = "contention", fmt='.-', \
+   690         1          0.0      0.0      0.0              capsize=3)
+   691                                           
+   692                                           
+   693                                               # plt.text(0, unserved_packets_contention[0], str(np.round(unserved_packets_contention[0],2)), \
+   694                                                       #  fontsize=12, verticalalignment='bottom')
+   695                                           
+   696         1       5972.0   5972.0      0.0      plt.legend()
+   697                                           
+   698         1        131.0    131.0      0.0      plt.xlabel("lambda*schedule_duration")
+   699         1        107.0    107.0      0.0      plt.ylabel("Unserved packets")
+   700                                           
+   701         1          1.0      1.0      0.0      if scale == "log":
+   702                                                       plt.yscale('log')
+   703                                           
+   704         5         18.0      3.6      0.0      title = (f"Simulation 3 unserved vs lambda, \n PER = {PER}, \n"
+   705         1          0.0      0.0      0.0              f"num_UEs: {num_UEs}, \n"
+   706         1          0.0      0.0      0.0              f"allowed_payload: {payload_size} B, \n "
+   707         1          0.0      0.0      0.0              f"packet size: {packet_sizes[0]} B, \n"
+   708         1          1.0      1.0      0.0              f"delivery_latency: {delivery_latency} us ,\n"
+   709                                                       )
+   710         1        444.0    444.0      0.0      plt.title(title)
+   711         1      95351.0  95351.0      0.0      plt.tight_layout()
+   712                                           
+   713         1     134274.0 134274.0      0.0      plt.savefig(os.path.join(results_directory_experiment, n_packets_not_served_filename))
+   714                                           
+   715         1          0.0      0.0      0.0      if args.show_plots:
+   716                                                   plt.show()
+   717                                           
+   718                                           
+   719                                           
+   720         1          0.0      0.0      0.0      bus_occupancy_contention = []
+   721        11          6.0      0.5      0.0      for lambda_value in lambda_range:
+   722        10         17.0      1.7      0.0          bus_occupancy_contention.append(results_allUEs_per_lambda_contention[lambda_value]["bus_occupancy"])
+   723         2       1428.0    714.0      0.0      plt.plot(np.array(lambda_range)*scaling_factor, \
+   724         1          0.0      0.0      0.0              bus_occupancy_contention, '.-', label = "contention")
+   725                                               # plt.plot(n_packets_generated, percentiles)
+   726         1        144.0    144.0      0.0      plt.xlabel("lambda*schedule_duration (us)")
+   727         1        115.0    115.0      0.0      plt.ylabel("Bus occupancy")
+   728         1       8358.0   8358.0      0.0      plt.legend()
+   729                                           
+   730         1          1.0      1.0      0.0      if scale == "log":
+   731                                                       plt.yscale('log')
+   732                                           
+   733         5         19.0      3.8      0.0      title = (f"Simulation 3 Bus occupancy vs lambda, \n PER = {PER},\n"
+   734         1          0.0      0.0      0.0              f"num_UEs: {num_UEs}, \n"
+   735         1          0.0      0.0      0.0              f"allowed_payload: {payload_size} B, \n "
+   736         1          1.0      1.0      0.0              f"packet size: {packet_sizes[0]} B, \n"
+   737         1          0.0      0.0      0.0              f"delivery_latency: {delivery_latency} us ,\n"
+   738                                                       )
+   739         1        481.0    481.0      0.0      plt.title(title)
+   740                                               # Insert a textbox at the lowest y value of the plot and have y axis be the label
+   741         1      60613.0  60613.0      0.0      plt.tight_layout()
+   742                                           
+   743         1          2.0      2.0      0.0      if args.show_plots:
+   744                                                   plt.show()
+   745                                           
+   746                                           
+   747         1          1.0      1.0      0.0      wins_contention = []
+   748        11          8.0      0.7      0.0      for lambda_value in lambda_range:
+   749        10         26.0      2.6      0.0          wins_contention.append(results_allUEs_per_lambda_contention[lambda_value]["contention_wins"])
+   750         2       1420.0    710.0      0.0      plt.plot(np.array(lambda_range)*scaling_factor, \
+   751         1          1.0      1.0      0.0              wins_contention, '.-', label = "contention")
+   752                                               # plt.plot(n_packets_generated, percentiles)
+   753         1        132.0    132.0      0.0      plt.xlabel("lambda*schedule_duration (us)")
+   754         1        109.0    109.0      0.0      plt.ylabel("Contention wins")
+   755         1       8371.0   8371.0      0.0      plt.legend()
+   756                                           
+   757         1          1.0      1.0      0.0      if scale == "log":
+   758                                                       plt.yscale('log')
+   759                                           
+   760         5         17.0      3.4      0.0      title = (f"Simulation 3 Bus occupancy vs lambda, \n PER = {PER},\n"
+   761         1          0.0      0.0      0.0              f"num_UEs: {num_UEs}, \n"
+   762         1          0.0      0.0      0.0              f"allowed_payload: {payload_size} B, \n "
+   763         1          1.0      1.0      0.0              f"packet size: {packet_sizes[0]} B, \n"
+   764         1          0.0      0.0      0.0              f"delivery_latency: {delivery_latency} us ,\n"
+   765                                                       )
+   766         1        435.0    435.0      0.0      plt.title(title)
+   767                                               # Insert a textbox at the lowest y value of the plot and have y axis be the label
+   768         1      45710.0  45710.0      0.0      plt.tight_layout()
+   769                                           
+   770         1          1.0      1.0      0.0      if args.show_plots:
+   771                                                   plt.show()
+   772                                           
+   773         1         41.0     41.0      0.0      profiler.disable()
+   774         1         11.0     11.0      0.0      s = io.StringIO()
+   775         1      49436.0  49436.0      0.0      stats = pstats.Stats(profiler, stream = s).sort_stats('cumtime')
+   776         1      17985.0  17985.0      0.0      stats.print_stats()
+   777                                               # print this to a file
+   778         1         21.0     21.0      0.0      stats_filename = os.path.join(results_directory_experiment, "profiler_stats.txt")
+   779         2       2455.0   1227.5      0.0      with open(stats_filename, "w+") as file:
+   780         1        958.0    958.0      0.0          file.write(s.getvalue())
+
+573.92 seconds - simulation3_onlyCSMA_single_process.py:37 - run_simulation_for_lambda
+578.32 seconds - simulation3_onlyCSMA_single_process.py:206 - main

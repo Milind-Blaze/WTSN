@@ -1,0 +1,12 @@
+name: scientific_python
+channels:
+  - defaults
+dependencies:
+  - numpy
+  - notebook
+  - nb_conda_kernels
+  - jupyter_contrib_nbextensions
+  - matplotlib
+  - pandas
+  - seaborn
+prefix: /Users/milindkumarvaddiraju/opt/miniconda3/envs/scientific_python

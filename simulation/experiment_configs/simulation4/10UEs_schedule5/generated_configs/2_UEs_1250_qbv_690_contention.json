@@ -1,0 +1,54 @@
+{
+    "results_directory_simulation": "../results/simulation_4/10UEs_schedule5/",
+    "setting_reserved": "setting 0",
+    "setting_contention": "setting 6",
+    "aggregation_limit": 104,
+    "num_UEs": 10,
+    "num_packets_per_ue": null,
+    "lambda_range_parameters": [
+        [
+            -4.5,
+            -2.68,
+            20
+        ]
+    ],
+    "num_iterations_contention": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+    ],
+    "num_iterations_arrival": 10,
+    "CWmin": 15,
+    "CWmax": 1023,
+    "start_offset": 10,
+    "duration": 5000000,
+    "schedule_config": {
+        "qbv_window_size": 1250,
+        "num_UEs_together_qbv": 1,
+        "schedule_name": "schedule 5",
+        "contention_window_size": 690,
+        "num_UEs_together_contention": 2
+    },
+    "percentile_to_plot": 99,
+    "wifi_slot_time": 9,
+    "DIFS": 34,
+    "mode_contention": "Mode 4",
+    "advance_time": 10
+}

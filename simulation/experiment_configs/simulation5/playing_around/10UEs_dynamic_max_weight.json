@@ -1,0 +1,22 @@
+{
+    "results_directory_simulation": "../results/simulation5/10UEs_dynamic_max_weight",
+    "setting_reserved": "setting 0",
+    "setting_contention": "setting 6",
+    "aggregation_limit": 104,
+    "num_UEs": 10,
+    "num_packets_per_ue": null,
+    "lambda_range_parameters": [[-4.5, -3.3, 10], [-3.28, -2.57, 10]],
+    "num_iterations_contention": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+    "num_iterations_arrival": 25,
+    "CWmin": 15,
+    "CWmax": 1023,
+    "start_offset": 10,
+    "duration": 15000000,
+    "schedule_config": {"schedule_name": "dynamic roundrobin blank"
+                        },
+    "percentile_to_plot": 99,
+    "wifi_slot_time": 9,
+    "DIFS": 34,
+    "mode_contention": "Mode 4",
+    "advance_time": 10
+}
