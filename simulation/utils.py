@@ -31,7 +31,14 @@ def save_schedule_plot(UE_names, schedule, start_offset, end_time, filename):
     # Plot rectangles for each slot
     for slot in schedule.schedule.values():
         for ue in slot.UEs:
-            rect = Rectangle((slot.start_time, ue_positions[ue] - height / 2), slot.end_time - slot.start_time, height, color='red', alpha=0.8)
+            if slot.mode == "contention":
+                rect = Rectangle((slot.start_time, ue_positions[ue] - height / 2), \
+                                 slot.end_time - slot.start_time, height, facecolor='red', \
+                                alpha=0.8, edgecolor='black', linewidth = 0.5)
+            elif slot.mode == "OFDMA":
+                rect = Rectangle((slot.start_time, ue_positions[ue] - height / 2), \
+                                 slot.end_time - slot.start_time, height, facecolor='green', \
+                                alpha=0.8, edgecolor='black', linewidth = 0.5)
             ax.add_patch(rect)
             # ax.text((slot.start_time + slot.end_time) / 2, ue_positions[ue], ue, horizontalalignment='center', verticalalignment='center')
 
