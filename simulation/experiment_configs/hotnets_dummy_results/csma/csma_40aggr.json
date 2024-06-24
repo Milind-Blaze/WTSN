@@ -1,8 +1,8 @@
 {
-    "results_directory_simulation": "../results/hotnets_dummy_results",
+    "results_directory_simulation": "../results/hotnets_dummy_results/csma",
     "setting_reserved": "MCS7",
     "setting_contention": "MCS7",
-    "aggregation_limit": 100,
+    "aggregation_limit": 40,
     "num_UEs": 9,
     "num_packets_per_ue": null,
     "lambda_range_parameters": [[-4.5, -2.35, 30]],

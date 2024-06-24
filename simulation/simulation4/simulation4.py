@@ -220,6 +220,7 @@ def run_simulation_for_lambda(lambda_value, lambda_index, schedule, config, para
     # result_temp["contention_wins"] = np.mean(contention_wins_across_arrivals)
     # result_temp["bus_occupancy"] = np.mean(bus_occupancy_across_arrivals)
     result_temp["queue_slope"] = np.mean(queue_slope_across_arrivals)
+    print(result_temp)
 
     return result_temp
 
@@ -372,7 +373,7 @@ def main():
     results_allUEs_per_lambda_contention = {}
     for i in range(len(lambda_range)):
         results_allUEs_per_lambda_contention[lambda_range[i]] = results_parallel[i]
-        
+        print(results_allUEs_per_lambda_contention)
 
     execution_finish_time = time.time()
     execution_duration = execution_finish_time - execution_start_time
@@ -498,6 +499,9 @@ def main():
         "experiment_parameters": experiment_parameters
     }
 
+    print("\n \n \n")
+    print("experiment_parameters_pickle", experiment_parameters_pickle)
+
     experiment_parameters_pickle_filename = os.path.join(results_directory_experiment, \
                                                         "experiment_parameters.pkl")
 
@@ -535,9 +539,10 @@ def main():
         percentiles_contention.append(results_allUEs_per_lambda_contention[lambda_value]["percentile_latency"])
         percentiles_contention_std.append(\
             results_allUEs_per_lambda_contention[lambda_value]["percentile_latency_std"])
-    plt.errorbar(np.array(lambda_range)*scaling_factor, \
-            percentiles_contention, percentiles_contention_std, label = "contention", fmt='.-', \
-            capsize=3)
+    print("lambda_value", lambda_value, "percentiles_contention", percentiles_contention)
+    print("lambda_value", lambda_value, "percentiles_contention_std", percentiles_contention_std)
+    plt.plot(np.array(lambda_range)*scaling_factor, \
+            percentiles_contention, ".-", label = "contention")
     # plt.plot(n_packets_generated, percentiles)
     plt.xlabel("lambda*schedule_duration (us)")
     plt.ylabel(str(percentile_to_plot) + "percentile latency (us)")
@@ -550,13 +555,13 @@ def main():
             f"num_UEs: {num_UEs}, \n"
             f"allowed_payload: {payload_size} B, \n "
             f"packet size: {packet_sizes[0]} B, \n"
-            f"delivery_latency: {delivery_latency} us ,\n"
             )
     plt.title(title)
     # Insert a textbox at the lowest y value of the plot and have y axis be the label
     plt.text(0, percentiles_contention[0], str(np.round(percentiles_contention[0],2)), \
             fontsize=12, verticalalignment='bottom')
     plt.tight_layout()
+    
 
 
     plt.savefig(os.path.join(results_directory_experiment, percentile_filename))
@@ -613,7 +618,6 @@ def main():
             f"num_UEs: {num_UEs}, \n"
             f"allowed_payload: {payload_size} B, \n "
             f"packet size: {packet_sizes[0]} B, \n"
-            f"delivery_latency: {delivery_latency} us ,\n"
             )
     plt.title(title)
     plt.tight_layout()
@@ -671,7 +675,6 @@ def main():
             f"num_UEs: {num_UEs}, \n"
             f"allowed_payload: {payload_size} B, \n "
             f"packet size: {packet_sizes[0]} B, \n"
-            f"delivery_latency: {delivery_latency} us ,\n"
             )
     plt.title(title)
     plt.tight_layout()
