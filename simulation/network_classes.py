@@ -984,7 +984,8 @@ class Network:
                         #     max_queue_length = queue_length
                     
                     if len(UEs_to_contend) == 0:
-                        print("UEs_to_contend is empty")
+                        if self.debug_mode:
+                            print("UEs_to_contend is empty")
                         # if max_queue_length == 0:
                         #     UEs_to_contend = copy.deepcopy(UEs_all)
                         # else:

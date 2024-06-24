@@ -520,6 +520,60 @@ def create_schedule(UE_names: list, start_time: float, end_time: float, schedule
         schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
 
         return (schedule_contention, cycle_time)
+    
+    if schedule_name == "arbitrary urllc then embb schedule":
+        """urllc then embb
+        """
+        assert "urllc_window_size" in schedule_config, "schedule requires 'qbv_window_size' parameter"
+        # assert "num_UEs_together" in schedule_config, "schedule 3 requires 'num_UEs_together' parameter"
+        assert "embb_window_size" in schedule_config, "schedule requires 'contention_window_size' parameter"
+        assert "urllc_schedule" in schedule_config, "schedule requires 'urllc schedule' parameter"
+        assert "embb_schedule" in schedule_config, "schedule requires 'embb schedule' parameter"
+
+        urllc_window_size = schedule_config["urllc_window_size"]
+        embb_window_size = schedule_config["embb_window_size"]
+        urllc_schedule = schedule_config["urllc_schedule"]
+        embb_schedule = schedule_config["embb_schedule"]
+
+        # num_UEs_together = schedule_config["num_UEs_together"]
+        # assert num_UEs_together < len(UE_names), "Number of UEs together should be less than \
+        #      or equal to the total number of UEs"
+
+
+        embb_counter = 0
+        urllc_counter = 0
+
+        num_UEs = len(UE_names)
+        slots_temp = {}
+        qbv_start_time = start_time
+        num_slot = 0
+        while qbv_start_time < end_time:
+            
+            UE_names_temp = []
+            if num_slot%2 == 0:
+                UE_names_temp = urllc_schedule[urllc_counter%len(urllc_schedule)]
+                qbv_end_time = min(qbv_start_time + urllc_window_size, end_time)
+                urllc_counter += 1
+            else:
+                UE_names_temp = embb_schedule[embb_counter%len(embb_schedule)]
+                qbv_end_time = min(qbv_start_time + embb_window_size, end_time)
+                embb_counter += 1
+            
+            slots_temp[num_slot] = Slot(num_slot,\
+                                        qbv_start_time,\
+                                        qbv_end_time,
+                                        "contention",
+                                        UE_names_temp)
+            num_slot += 1
+            qbv_start_time = qbv_end_time
+
+            if num_slot == 2*num_UEs:
+                cycle_time = qbv_end_time
+
+
+        schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
+
+        return (schedule_contention, cycle_time)
 
     
     
@@ -976,6 +1030,65 @@ def create_schedule_HVCs(UE_names: list, start_time: float, end_time: float, sch
             
             UE_names_temp = []
             if num_slot%2 == 0:
+                UE_names_temp = urllc_schedule[urllc_counter%len(urllc_schedule)]
+                qbv_end_time = min(qbv_start_time + urllc_window_size, end_time)
+                urllc_counter += 1
+                schedule_type = "OFDMA"
+            else:
+                UE_names_temp = embb_schedule[embb_counter%len(embb_schedule)]
+                qbv_end_time = min(qbv_start_time + embb_window_size, end_time)
+                embb_counter += 1
+                if "embb_schedule_type" in schedule_config:
+                    schedule_type = schedule_config["embb_schedule_type"]
+                else:
+                    schedule_type = "contention"
+            
+            slots_temp[num_slot] = Slot(num_slot,\
+                                        qbv_start_time,\
+                                        qbv_end_time,
+                                        schedule_type,
+                                        UE_names_temp)
+            num_slot += 1
+            qbv_start_time = qbv_end_time
+
+            if num_slot == 2*num_UEs:
+                cycle_time = qbv_end_time
+
+
+        schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
+
+        return (schedule_contention, cycle_time)
+    
+    if schedule_name == "OFDMA CSMA-AP":
+        """APs have random access to the channel
+        """
+        assert "urllc_window_size" in schedule_config, "schedule requires 'qbv_window_size' parameter"
+        # assert "num_UEs_together" in schedule_config, "schedule 3 requires 'num_UEs_together' parameter"
+        assert "embb_window_size" in schedule_config, "schedule requires 'contention_window_size' parameter"
+        assert "urllc_schedule" in schedule_config, "schedule requires 'urllc schedule' parameter"
+        assert "embb_schedule" in schedule_config, "schedule requires 'embb schedule' parameter"
+
+        urllc_window_size = schedule_config["urllc_window_size"]
+        embb_window_size = schedule_config["embb_window_size"]
+        urllc_schedule = schedule_config["urllc_schedule"]
+        embb_schedule = schedule_config["embb_schedule"]
+
+        # num_UEs_together = schedule_config["num_UEs_together"]
+        # assert num_UEs_together < len(UE_names), "Number of UEs together should be less than \
+        #      or equal to the total number of UEs"
+
+
+        embb_counter = 0
+        urllc_counter = 0
+
+        num_UEs = len(UE_names)
+        slots_temp = {}
+        qbv_start_time = start_time
+        num_slot = 0
+        while qbv_start_time < end_time:
+            
+            UE_names_temp = []
+            if random.choice([True,False]) == 0:
                 UE_names_temp = urllc_schedule[urllc_counter%len(urllc_schedule)]
                 qbv_end_time = min(qbv_start_time + urllc_window_size, end_time)
                 urllc_counter += 1

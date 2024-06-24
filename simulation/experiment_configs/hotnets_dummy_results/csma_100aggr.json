@@ -1,0 +1,21 @@
+{
+    "results_directory_simulation": "../results/hotnets_dummy_results",
+    "setting_reserved": "MCS7",
+    "setting_contention": "MCS7",
+    "aggregation_limit": 100,
+    "num_UEs": 9,
+    "num_packets_per_ue": null,
+    "lambda_range_parameters": [[-4.5, -2.22, 30]],
+    "num_iterations_contention": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+    "num_iterations_arrival": 15,
+    "CWmin": 15,
+    "CWmax": 1023,
+    "start_offset": 10,
+    "duration": 5000000,
+    "schedule_config": {"schedule_name": "CSMA"},
+    "percentile_to_plot": 99,
+    "wifi_slot_time": 9,
+    "DIFS": 34,
+    "mode_contention": "Mode 4",
+    "advance_time": 10
+}
