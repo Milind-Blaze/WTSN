@@ -1,5 +1,5 @@
 {
-    "results_directory_simulation": "../results/hotnets_dummy_results/rr",
+    "results_directory_simulation": "../results/hotnets_dummy_results/rr_round2",
     "setting_reserved": "MCS7",
     "setting_contention": "MCS7",
     "aggregation_limit": 150,
@@ -11,7 +11,7 @@
     "CWmin": 15,
     "CWmax": 1023,
     "start_offset": 10,
-    "duration": 1500000,
+    "duration": 3000000,
     "schedule_config": {"schedule_name": "roundrobin",
                         "qbv_window_size": 600},
     "percentile_to_plot": 99,

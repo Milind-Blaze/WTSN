@@ -1,7 +1,7 @@
 {
-    "results_directory_simulation": "../results/simulation_4/playing_around/grouped_roundrobin",
-    "setting_reserved": "setting 0",
-    "setting_contention": "setting 6",
+    "results_directory_simulation": "../results/scrap",
+    "setting_reserved": "MCS7",
+    "setting_contention": "MCS7",
     "aggregation_limit": 104,
     "num_UEs": 10,
     "num_packets_per_ue": null,
