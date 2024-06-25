@@ -1,5 +1,5 @@
 {
-    "results_directory_simulation": "../results/hotnets_dummy_results/csma",
+    "results_directory_simulation": "../results/hotnets_legit_trial1/csma",
     "setting_reserved": "MCS7",
     "setting_contention": "MCS7",
     "aggregation_limit": 150,
