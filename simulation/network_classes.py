@@ -1120,8 +1120,12 @@ class Network:
                                         arrival_times[UE_name].remove(packet.arrival_time)
                                         assert len(arrival_times[UE_name]) == len(packets_to_transmit[UE_name]), \
                                             "Arrival times and packets to transmit are not the same length"
+                                        if self.debug_mode:
+                                            print("Packet delivered: ", packet.sequence_number)
                                     else:
                                         packet.status = PacketStatus.DROPPED
+                                        if self.debug_mode:
+                                            print("Packet dropped: ", packet.sequence_number)
                                 
                                 self.UEs[UE_name].CW = self.UEs[UE_name].CWmin
                                 self.UEs[UE_name].transmission_record[slot]["num_wins"] += 1
