@@ -11,6 +11,7 @@ import copy
 from enum import Enum
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import typing
 from typing import List, Tuple, Dict, Optional
 import inspect
@@ -238,7 +239,7 @@ class UE:
 
 
     def  generate_packets(self, base_schedule : Schedule, packet_size: List[int], 
-                          packet_priorities: List[int]) ->  None:
+                          packet_priorities: List[int], **kwargs) ->  None:
         '''
         TODO: Fix this to take a custom generator function from outside and run that,
             this function can potentially enforce some constraints on the custom funciton that 
@@ -309,6 +310,41 @@ class UE:
                                           priority = packet_priorities[0], 
                                           sequence_number = packet_counter,
                                           arrival_time = arrival_times[packet_counter]))
+        
+        elif self.network_mode_of_operation == "Trace":
+            assert 'trace_path' in kwargs, "Trace path not provided"
+            assert 'trace_key'  in kwargs, "Trace key not provided"
+            assert 'trace_packet_ratio' in kwargs, "Trace packet ratio not provided"
+            assert "random_offset" in kwargs, "Random offset not provided"
+
+            trace_path = kwargs['trace_path']
+            trace_key = kwargs['trace_key']
+            trace_packet_ratio = kwargs['trace_packet_ratio']  
+            random_offset = kwargs['random_offset'] 
+
+            request_df = pd.read_csv(trace_path)
+            # TODO: This is trace specific: ignore the first 50 readings, convert from ns to us
+            arrival_times_messages = (request_df[trace_key].to_numpy()[50:])/10**3
+            arrival_times_packets = np.repeat(arrival_times_messages, trace_packet_ratio)
+            arrival_times_packets += random_offset
+            self.n_packets = len(arrival_times_packets)
+
+            for packet_counter in range(self.n_packets):
+                self.packets.append(Packet(size = packet_size[0], 
+                                          priority = packet_priorities[0], 
+                                          sequence_number = packet_counter,
+                                          arrival_time = arrival_times_packets[packet_counter]))
+                
+            
+
+
+
+
+            # Load csv file
+
+            # Ignore first 50 readings
+            # Create n packets for every trace timestamp
+            # Assign the packets to the UE
 
             
 

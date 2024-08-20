@@ -66,6 +66,35 @@ def create_schedule(UE_names: list, start_time: float, end_time: float, schedule
 
         return (schedule_contention, cycle_time)
     
+    if schedule_name == "33ms slots 1 UE":
+
+        assert "qbv_window_size" in schedule_config, "33ms schedule requires 'qbv_window_size' parameter"
+        assert "data_start_time" in schedule_config, "33ms schedule requires 'data_start_time' parameter"
+        qbv_window_size = schedule_config["qbv_window_size"]
+        data_start_time = schedule_config["data_start_time"]
+
+        
+        slots_temp = {}
+        qbv_start_time = data_start_time
+        num_slot = 0
+        while qbv_start_time < end_time:
+            qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
+            UE_names_temp = ["UE0"]
+            slots_temp[num_slot] = Slot(num_slot,\
+                                        qbv_start_time,\
+                                        qbv_end_time,
+                                        "contention",
+                                        UE_names_temp)
+            num_slot += 1
+            qbv_start_time = qbv_start_time + 33.3*1000
+
+            
+        cycle_time = end_time 
+
+        schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
+
+        return (schedule_contention, cycle_time)
+    
 
     if schedule_name == "OFDMA slots":
 
