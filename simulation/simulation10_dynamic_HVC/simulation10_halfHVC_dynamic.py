@@ -320,6 +320,7 @@ def main():
     ## Schedule parameters for reserved base schedule
     start_offset = config["start_offset"] # microseconds
     end_time = config["duration"] + start_offset # microseconds
+    schedule_config = config["schedule_config"]
     lambda_fraction = schedule_config["lambda_fraction"]
     
 
@@ -329,7 +330,7 @@ def main():
     # Obtained from the sheet
     wifi_slot_time = config["wifi_slot_time"] # microseconds
     DIFS = config["DIFS"] # microseconds
-    schedule_config = config["schedule_config"]
+    
 
 
 
@@ -338,8 +339,7 @@ def main():
     num_iterations_contention = config["num_iterations_contention"]
     mode_contention = config["mode_contention"] 
     advance_time = config["advance_time"] # microseconds
-    debug_mode = False
-    config["debug_mode"] = debug_mode
+    debug_mode = config["debug_mode"] 
     config["save_UEs"] = args.save_UEs
 
     assert len(num_iterations_contention) == len(lambda_range), "Lengths not equal"

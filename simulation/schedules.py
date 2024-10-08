@@ -1063,7 +1063,105 @@ def create_schedule_dynamic(UE_names: list, start_time: float, end_time: float, 
         schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
 
         return (schedule_contention, cycle_time)
-    
+
+    if schedule_name == "dynamic HBC and LLC":
+        """
+        In this schedule, the length of the URLLC slot and the 
+        length of the eMBB slot are varied based on the lambda value.
+        Note that URLLC and eMBB slots alternate. 
+        """
+
+        num_UEs = len(UE_names)
+        wifi_slot_time = config["wifi_slot_time"] # microseconds
+        DIFS = config["DIFS"] # microseconds
+        CWmin = config["CWmin"]
+
+        # lambda_fraction_embb is for the schedule creation i.e slots are sized based on much
+        # traffic would have gone through the eMBB slots. lambda_fraction is for the actual
+        # traffic generation: to be used depending on whether URLLC or eMBB is being simulated
+        assert "lambda_fraction_embb" in schedule_config, "Schedule requires 'lambda_fraction_embb' parameter"
+        assert "lambda_fraction" in schedule_config, "Schedule requires 'lambda_fraction' parameter"
+        assert "delivery_latency_spec" in schedule_config, "Schedule requires 'delivery_latency_embb' parameter"
+        assert "delivery_latency_embb" in schedule_config["delivery_latency_spec"], "Schedule requires 'delivery_latency_embb' parameter"
+        assert "maximum_urllc_interval" in schedule_config, "Schedule requires 'maximum_urllc_interval' parameter"
+        # assert "urllc_window_size" in schedule_config, "Schedule requires 'urllc_window_size' parameter"
+        assert "urllc_schedule" in schedule_config, "Schedule requires 'urllc_schedule' parameter"
+        assert "embb_schedule" in schedule_config, "Schedule requires 'embb_schedule' parameter"
+        
+
+        lambda_fraction_embb = schedule_config["lambda_fraction_embb"]
+        delivery_latency_spec = schedule_config["delivery_latency_spec"]
+        delivery_latency_embb = schedule_config["delivery_latency_spec"]["delivery_latency_embb"]
+        maximum_urllc_interval = schedule_config["maximum_urllc_interval"]
+        urllc_buffer = schedule_config["urllc_buffer"]
+        urllc_schedule = schedule_config["urllc_schedule"]
+        embb_schedule = schedule_config["embb_schedule"]
+
+        assert maximum_urllc_interval > 500, "Maximum URLLC interval should be greater than 500 \
+                                             microseconds, to allow at least some transmission"
+        assert delivery_latency_spec["MCS"] == 7, "Hardcoded MCS value for now, ensure embb \
+                                                    latencies are used"
+
+        # TODO: add a config parameter that chooses different MCS delivery times
+
+
+        slots_temp = {}
+        qbv_start_time = start_time
+        num_slot = 0
+        embb_counter = 0
+        urllc_counter = 0
+
+        # computing the qbv_window_size based on the lambda value and delivery latency
+        for delivery_latency_index in range(len(delivery_latency_embb)):
+            delivery_latency_value = delivery_latency_embb[delivery_latency_index]
+            slot_length_temp = DIFS + CWmin*wifi_slot_time + delivery_latency_value
+            urllc_window_size = slot_length_temp + urllc_buffer
+            time_to_slot = num_UEs*(urllc_window_size + slot_length_temp)
+            packets_accumulated = lambda_fraction_embb*lambda_value*time_to_slot
+
+            if slot_length_temp >= maximum_urllc_interval: 
+                # This if condition is assuming some reasonable MCS and maximum_urllc_interval
+                delivery_latency_value = delivery_latency_embb[delivery_latency_index - 1]
+                slot_length_temp = DIFS + CWmin*wifi_slot_time + delivery_latency_value
+                qbv_window_size = slot_length_temp
+                break
+            elif packets_accumulated < delivery_latency_index:
+                qbv_window_size = slot_length_temp
+                break
+            elif delivery_latency_index == len(delivery_latency) - 1:
+                qbv_window_size = slot_length_temp
+
+
+
+
+
+        while qbv_start_time < end_time:
+            
+            UE_names_temp = []
+            if num_slot%2 == 0:
+                UE_names_temp = urllc_schedule[urllc_counter%len(urllc_schedule)]
+                qbv_end_time = min(qbv_start_time + urllc_window_size, end_time)
+                urllc_counter += 1
+            else:
+                UE_names_temp = embb_schedule[embb_counter%len(embb_schedule)]
+                qbv_end_time = min(qbv_start_time + qbv_window_size, end_time)
+                embb_counter += 1
+            
+            slots_temp[num_slot] = Slot(num_slot,\
+                                        qbv_start_time,\
+                                        qbv_end_time,
+                                        "contention",
+                                        UE_names_temp)
+            num_slot += 1
+            qbv_start_time = qbv_end_time
+
+
+            if num_slot == 2*num_UEs:
+                cycle_time = qbv_end_time 
+
+        schedule_contention = Schedule(start_time, end_time, num_slot, slots_temp)
+
+        return (schedule_contention, cycle_time)  
 
 
 
