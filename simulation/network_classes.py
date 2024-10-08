@@ -1420,109 +1420,13 @@ class Network:
                             # Find the minimum packet arrival time for a packet that is  among the UEs which is greater than
                             # the current start time 
 
-                            
 
-                        # elif len(UEs_to_transmit) == 1:
-                        #     # Transmit all packets that have arrived till this point (start_time)
-                        #     UE_name = UEs_to_transmit[0]
-
-                        #     # Determine delivery time
-                        #     time_remaining = base_schedule.schedule[slot].end_time - start_time - \
-                        #                     min_backoff*self.wifi_slot_time - self.DIFS
-                        #     max_packets_time_remaining = bisect.bisect_right(\
-                        #         delivery_latency_ofdma, time_remaining)
-                        #     max_packets_allowed = min(max_packets_time_remaining, aggregation_limit)
-                        #     n_packets_transmitted = 0
-
-                        #     if self.debug_mode:
-                        #         print("\nUE_name: ", UE_name)
-                        #         print("end_time: ", base_schedule.schedule[slot].end_time)
-                        #         print("start_time: ", start_time)
-                        #         print("min_backoff: ", min_backoff)
-                        #         print("DIFS: ", self.DIFS)
-                        #         print("wifi_slot_time: ", self.wifi_slot_time)
-                        #         print("time_remaining: ", time_remaining)
-                        #         print("max_packets_time_remaining: ", max_packets_time_remaining)
-                        #         print("max_packets_allowed: ", max_packets_allowed)
-
-                                
-
-                        #     if max_packets_allowed == 0:
-                        #         # TODO: handle this case by moving start time to the end of the slot or advancing by 10 us
-                        #         n_packets_transmitted = 0
-                        #     else:
-                        #         while (n_packets_transmitted < max_packets_allowed and 
-                        #                n_packets_transmitted < len(packets_to_transmit[UE_name])):
-                        #             if self.debug_mode:
-                        #                 print("n_packets_transmitted: ", n_packets_transmitted)
-                        #                 print("packet_sequence_number: ", packets_to_transmit[UE_name][n_packets_transmitted])
-                        #                 print(" packets_to_transmit[UE_name][:10]: ",  packets_to_transmit[UE_name][:10])
-                        #                 print("arrival_times[UE_name][:10]: ", arrival_times[UE_name][:10])
-
-                        #             packet_sequence_number = packets_to_transmit[UE_name][n_packets_transmitted]
-                        #             packet = self.UEs[UE_name].packets[packet_sequence_number]
-                        #             if packet.arrival_time <= start_time:
-                        #                 n_packets_transmitted += 1
-                        #             else:
-                        #                 break
-                                
-                        #         # TODO: check indexing of delivery_latency_contention
-                        #         delivery_time = start_time + delivery_latency_contention[n_packets_transmitted-1] + \
-                        #                         min_backoff*self.wifi_slot_time + self.DIFS
-                                
-                        #         for packet_sequence_number in packets_to_transmit[UE_name][:n_packets_transmitted]:
-                        #             packet = self.UEs[UE_name].packets[packet_sequence_number]
-                        #             if self.UEs[UE_name].transmit_packet(PER_contention):
-                        #                 packet.delivery_time = delivery_time 
-                        #                 packet.status = PacketStatus.DELIVERED
-                        #                 packets_to_transmit[UE_name].remove(packet_sequence_number)
-                        #                 arrival_times[UE_name].remove(packet.arrival_time)
-                        #                 assert len(arrival_times[UE_name]) == len(packets_to_transmit[UE_name]), \
-                        #                     "Arrival times and packets to transmit are not the same length"
-                        #             else:
-                        #                 packet.status = PacketStatus.DROPPED
-                                
-                        #         self.UEs[UE_name].CW = self.UEs[UE_name].CWmin
-                        #         self.UEs[UE_name].transmission_record[slot]["num_wins"] += 1
-                        #         self.UEs[UE_name].transmission_record[slot]["num_transmissions"]\
-                        #             .append(n_packets_transmitted)
-                                    
-                        #     if n_packets_transmitted > 0:
-                        #         if self.debug_mode:
-                        #             print("start_time: ", start_time)
-
-                        #         start_time = delivery_time 
-
-                        #         if self.debug_mode:
-                        #             print("delivery_time: ", delivery_time)
-                        #             print("UEs: ", UEs_to_transmit)
-                        #             print("\n")
-                        #     elif n_packets_transmitted == 0:
-                        #         if max_packets_time_remaining == 0:
-                        #             start_time = base_schedule.schedule[slot].end_time
-                        #             if self.debug_mode:
-                        #                 print("Start time advanced to end")
-                        #                 print("Single UE, no packets transmitted")
-                        #                 print("start_time: ", start_time)
-                        #         else:
-                        #             start_time = start_time + advance_time
-                        #             if self.debug_mode:
-                        #                 # This gets triggered towards the end of the slot
-                        #                 # as delivery time exceeds the end time of the slot 
-                        #                 print("Should not happen! start_time (advanced): ", start_time)
-                        #                 print("UEs: ", UEs_to_transmit)
-                        #                 print("\n")
-
-                        #     # print("n_packets_transmitted : ", n_packets_transmitted)
-                        #     n_transmitted_array.append(n_packets_transmitted)
 
                         else:
-                            # TODO: Fix the case where UEs contend but there's some of them
-                            # have no data to transmit, then exclude them from the list of
-                            # UEs contending, prevent packets from being dropped and
-                            # prevent the contention window from being doubled
+
                             delivery_times = []
                             n_packets_transmitted_per_UE = []
+                            n_packets_per_UE_per_TXOP = {}
                             time_remaining = base_schedule.schedule[slot].end_time - start_time - \
                                             min_backoff*self.wifi_slot_time - self.DIFS
                             # TODO: Make delivery_latency_contention different for different UEs
@@ -1565,26 +1469,12 @@ class Network:
                                             break
                                     
                                     # TODO: check if (max_packets_allowed - 1) is correct
-                                    delivery_time = start_time + delivery_latency_OFDMA[max_packets_allowed-1] + \
+                                    n_packets_per_UE_per_TXOP[UE_name] = n_packets_transmitted
+                                    delivery_time = start_time + delivery_latency_OFDMA[n_packets_transmitted-1] + \
                                                     min_backoff*self.wifi_slot_time + self.DIFS
                                     delivery_times.append(delivery_time)
 
-
-                                    for packet_sequence_number in packets_to_transmit[UE_name][:n_packets_transmitted]:
-                                        packet = self.UEs[UE_name].packets[packet_sequence_number]
-                                        if self.UEs[UE_name].transmit_packet(PER_OFDMA):
-                                            packet.delivery_time = delivery_time 
-                                            packet.status = PacketStatus.DELIVERED
-                                            packets_to_transmit[UE_name].remove(packet_sequence_number)
-                                            arrival_times[UE_name].remove(packet.arrival_time)
-                                            assert len(arrival_times[UE_name]) == len(packets_to_transmit[UE_name]), \
-                                                "Arrival times and packets to transmit are not the same length"
-                                        else:
-                                            packet.status = PacketStatus.DROPPED
-
-                                        if self.debug_mode:
-                                            print("packet_sequence_number: ", packet_sequence_number)
-                                            print("packet status: ", packet.status)
+                                    n_packets_transmitted_per_UE.append(n_packets_transmitted)
 
                                     if n_packets_transmitted > 0: 
                                     # TODO: enforce behaviour only if at least one packet is transmitted 
@@ -1597,10 +1487,35 @@ class Network:
                                     self.UEs[UE_name].transmission_record[slot]["num_wins"] += 1
                                     self.UEs[UE_name].transmission_record[slot]["num_transmissions"]\
                                         .append(n_packets_transmitted)
-                                
 
-                                
-                                n_packets_transmitted_per_UE.append(n_packets_transmitted)
+                            if max_packets_allowed != 0:
+                                PPDU_delivery_time = max(delivery_times)
+
+
+                            for UE_name in UEs_to_transmit:
+                                if max_packets_allowed == 0:
+                                    if self.debug_mode == True:
+                                        print("max_packets_allowed is 0")
+                                else:
+                                    for packet_sequence_number in packets_to_transmit[UE_name][:n_packets_per_UE_per_TXOP[UE_name]]:
+                                        packet = self.UEs[UE_name].packets[packet_sequence_number]
+                                        if self.UEs[UE_name].transmit_packet(PER_OFDMA):
+                                            packet.delivery_time = PPDU_delivery_time 
+                                            packet.status = PacketStatus.DELIVERED
+                                            packets_to_transmit[UE_name].remove(packet_sequence_number)
+                                            arrival_times[UE_name].remove(packet.arrival_time)
+                                            assert len(arrival_times[UE_name]) == len(packets_to_transmit[UE_name]), \
+                                                "Arrival times and packets to transmit are not the same length"
+                                        else:
+                                            packet.status = PacketStatus.DROPPED
+
+                                        if self.debug_mode:
+                                            print("UE_name: ", UE_name)
+                                            print("packet_sequence_number: ", packet_sequence_number)
+                                            print("packet status: ", packet.status)
+
+                                    
+                                  
 
                             total_packets_transmitted = sum(n_packets_transmitted_per_UE)
                             if total_packets_transmitted > 0:
