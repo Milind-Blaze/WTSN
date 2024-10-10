@@ -1302,6 +1302,11 @@ class Network:
                     # print("array of transmission numbers: ", n_transmitted_array)
 
                 elif base_schedule.schedule[slot].mode == "OFDMA":
+                    
+                    # TODO: Hardcoded mode change, need to fix this
+                    # trigger_mode = "dynamic"
+                    trigger_mode = "static"
+
 
                     if self.debug_mode:
                         print("OFDMA slot")
@@ -1522,12 +1527,21 @@ class Network:
                                 if self.debug_mode:
                                     print("start_time: ", start_time)
 
-                                start_time = max(delivery_times)
+                                if trigger_mode == "dynamic":
+                                    start_time = max(delivery_times)
+                                    if self.debug_mode:
+                                        print("Set start time to end of Tx, mode: " + trigger_mode)
+                                else:
+                                    start_time = base_schedule.schedule[slot].end_time
+                                    if self.debug_mode:
+                                        print("Set start time to end of SLOT, mode: " + trigger_mode) 
 
                                 if self.debug_mode:
                                     print("delivery_time: ", delivery_times)
                                     print("UEs: ", UEs_to_transmit)
                                     print("\n")
+
+
                             elif total_packets_transmitted == 0:
                                 if max_packets_time_remaining == 0:
                                     start_time = base_schedule.schedule[slot].end_time
@@ -1536,7 +1550,14 @@ class Network:
                                         print("No packets transmitted as max_packets_time_remaining is 0")
                                         print("start_time: ", start_time)
                                 else:
-                                    start_time = start_time + advance_time
+                                    if trigger_mode == "dynamic":
+                                        start_time = start_time + advance_time
+                                        if self.debug_mode:
+                                            print("Increment start time by advance time, mode: " + trigger_mode)
+                                    else:
+                                        start_time = base_schedule.schedule[slot].end_time
+                                        if self.debug_mode:
+                                            print("Set start time to end of SLOT, mode: " + trigger_mode)
                                     if self.debug_mode:
                                         # This gets triggered towards the end of the slot
                                         # as delivery time exceeds the end time of the slot
