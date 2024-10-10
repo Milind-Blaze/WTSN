@@ -1,0 +1,28 @@
+{
+    "results_directory_simulation": "../results/OFDMA_experiments/hotmobile",
+    "setting_reserved": "MCS7",
+    "setting_contention": "MCS7",
+    "aggregation_limit": 150,
+    "num_UEs": 9,
+    "num_packets_per_ue": null,
+    "lambda_range_parameters": [[-4.5, -3.45, 10], [-3.2, -2.25, 10]],
+    "num_iterations_contention": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    "num_iterations_arrival": 10,
+    "CWmin": 15,
+    "CWmax": 1023,
+    "start_offset": 10,
+    "duration": 10000000,
+    "schedule_config": {"schedule_name": "OFDMA UL RR then SU DL",
+                        "UL_window_size": 4000,
+                        "DL_window_size": 4000,
+                        "UL_schedule": [["UE1", "UE2", "UE3", "UE4", "UE5", "UE6", "UE7", "UE8"]],
+                        "DL_schedule": [[]],
+                        "num_slots": 9,
+                        "trigger_mode": "static"
+                        },
+    "percentile_to_plot": 99,
+    "wifi_slot_time": 9,
+    "DIFS": 34,
+    "mode_contention": "Mode 4",
+    "advance_time": 10
+}
